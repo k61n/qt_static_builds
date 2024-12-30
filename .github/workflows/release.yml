@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+#on:
+#  push:
+#    tags:
+#      - '*'
+
+jobs:
+
+  macos:
+    name: macos
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+    env:
+      VVV: "5.15.16"
+      VV: "5.15"
+    steps:
+      - name: deps
+        shell: bash
+        run: |
+          brew install make
+      - name: download
+        shell: bash
+        run: |
+          wget https://download.qt.io/official_releases/qt/$VV/$VVV/single/qt-everywhere-opensource-src-${{env.VVV}}.tar.xz
+      - name: unpack
+        shell: bash
+        run: |
+          tar -xvf qt-everywhere-opensource-src-${{env.VVV}}.tar.xz
+      - name: configure
+        shell: bash
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}
+          mkdir build && cd build
+          ../configure -prefix ./qt${{env.VVV}}_macos_${{matrix.arch}} -release -static -opensource -confirm-license -nomake examples -nomake tests -skip qtlocation -skip qtwebengine -skip qtvirtualkeyboard QMAKE_APPLE_DEVICE_ARCHS=${{matrix.arch}}
+      - name: build
+        shell: bash
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}/build
+          gmake -j$(sysctl -n hw.ncpu)
+      - name: install
+        shell: bash
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}/build
+          gmake install
+      - name: pack
+        shell: bash
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}/build
+          tar -cvf qt${{env.VVV}}_macos_${{matrix.arch}}.tar qt${{env.VVV}}_macos_${{matrix.arch}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar
+          path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar
