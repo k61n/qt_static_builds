@@ -1,0 +1,13 @@
+diff --git a/hunspellworker_p.h b/hunspellworker_p.h
+index 474e802..239c2b2 100644
+--- a/hunspellworker_p.h
++++ b/hunspellworker_p.h
+@@ -48,7 +48,7 @@
+ #include <QSharedPointer>
+ #include <QVector>
+ #include <QLoggingCategory>
+-#include <hunspell/hunspell.h>
++#include <hunspell.h>
+ #include <QtHunspellInputMethod/qhunspellinputmethod_global.h>
+ 
+ QT_BEGIN_NAMESPACE
