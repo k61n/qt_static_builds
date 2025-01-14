@@ -64,3 +64,52 @@ jobs:
         with:
           name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar
           path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar
+
+  windows:
+    name: windows
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [windows-2019]
+        include:
+          - os: windows-2019
+            arch: x64
+    env:
+      VVV: "5.15.16"
+      VV: "5.15"
+    steps:
+      - name: download
+        shell: powershell
+        run: |
+          Remove-Item * -Recurse -Force
+          Start-BitsTransfer -Source "https://download.qt.io/official_releases/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-opensource-src-${{env.VVV}}.zip" -Destination .
+      - name: unpack
+        shell: powershell
+        run: |
+          7z.exe x .\qt-everywhere-opensource-src-${{env.VVV}}.zip -o"./"
+      - name: configure
+        shell: powershell
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}
+          mkdir build
+          cd build
+          ..\configure.bat -opensource -confirm-license -release -static -platform win32-g++ -opengl desktop -nomake examples -nomake tests -skip qtwebengine -prefix ".\qt${{env.VVV}}_windows_${{matrix.arch}}"
+      - name: build
+        shell: powershell
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}\build
+          mingw32-make.exe -j $env:NUMBER_OF_PROCESSORS
+      - name: install
+        shell: powershell
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}\build
+          mingw32-make.exe install -j $env:NUMBER_OF_PROCESSORS
+      - name: pack
+        shell: powershell
+        run: |
+          cd qt-everywhere-src-${{env.VVV}}\build
+          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.arch}}\*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qt${{env.VVV}}_windows_${{matrix.arch}}.zip
+          path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_windows_${{matrix.arch}}.zip
