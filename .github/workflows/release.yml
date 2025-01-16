@@ -23,6 +23,7 @@ jobs:
 
   macos:
     name: macos
+    needs: release
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -113,6 +114,7 @@ jobs:
 
   windows:
     name: windows
+    needs: release
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
