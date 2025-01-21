@@ -8,6 +8,7 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: github.ref_name == 'qt5'
     outputs:
       upload_url: ${{steps.create_release.outputs.upload_url}}
     steps:
@@ -22,6 +23,7 @@ jobs:
           prerelease: false
 
   macos:
+    if: github.ref_name == 'qt5'
     name: macos
     needs: release
     runs-on: ${{matrix.os}}
@@ -113,6 +115,7 @@ jobs:
           asset_content_type: application/octet-stream
 
   windows-mingw:
+    if: github.ref_name == 'qt5'
     name: windows
     needs: release
     runs-on: ${{matrix.os}}
@@ -170,6 +173,7 @@ jobs:
           asset_content_type: application/octet-stream
 
   windows-msvc:
+    if: github.ref_name == 'qt5'
     name: windows
     needs: release
     runs-on: ${{matrix.os}}

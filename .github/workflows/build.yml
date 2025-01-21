@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "qt5" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "qt5" ]
 
 jobs:
   macos:
