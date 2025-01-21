@@ -112,18 +112,19 @@ jobs:
           asset_name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
           asset_content_type: application/octet-stream
 
-  windows:
+  windows-mingw:
     name: windows
     needs: release
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [windows-x32, windows-2019]
         include:
           - os: windows-x32
-            arch: x32
+            arch: x86
+            comp: mingw810
           - os: windows-2019
             arch: x64
+            comp: mingw810
     env:
       VVV: "5.15.16"
       VV: "5.15"
@@ -141,10 +142,9 @@ jobs:
       - name: configure
         shell: powershell
         run: |
-          cd qt
-          mkdir build
-          cd build
-          ..\configure.bat -opensource -confirm-license -release -static -platform win32-g++ -opengl desktop -nomake examples -nomake tests -prefix ".\qt${{env.VVV}}_windows_mingw810_${{matrix.arch}}"
+          mkdir qt\build
+          cd qt\build
+          ..\configure.bat -opensource -confirm-license -release -static -platform win32-g++ -opengl desktop -nomake examples -nomake tests -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}"
       - name: build
         shell: powershell
         run: |
@@ -159,12 +159,72 @@ jobs:
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_mingw810_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_mingw810_${{matrix.arch}}\*"
+          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt/build/qt${{env.VVV}}_windows_mingw810_${{matrix.arch}}.zip
-          asset_name: qt${{env.VVV}}_windows_mingw810_${{matrix.arch}}.zip
+          asset_path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_content_type: application/octet-stream
+
+  windows-msvc:
+    name: windows
+    needs: release
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            arch: x86
+            comp: msvc2019
+          - os: windows-2019
+            arch: x64
+            comp: msvc2019
+    env:
+      VVV: "5.15.16"
+      VV: "5.15"
+    steps:
+      - name: download
+        shell: powershell
+        run: |
+          Remove-Item * -Recurse -Force
+          Start-BitsTransfer -Source "https://download.qt.io/official_releases/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-opensource-src-${{env.VVV}}.zip" -Destination .
+      - name: unpack
+        shell: powershell
+        run: |
+          7z.exe x .\qt-everywhere-opensource-src-${{env.VVV}}.zip -o"./"
+          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
+      - name: configure
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+          mkdir qt\build
+          cd qt\build
+          ..\configure.bat -opensource -confirm-license -release -static -platform win32-msvc -opengl desktop -nomake examples -nomake tests -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}"
+      - name: build
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+          cd qt\build
+          nmake
+      - name: install
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+          cd qt\build
+          nmake install
+      - name: pack
+        shell: powershell
+        run: |
+          cd qt\build
+          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{needs.release.outputs.upload_url}}
+          asset_path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
           asset_content_type: application/octet-stream
