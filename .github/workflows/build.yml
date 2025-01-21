@@ -87,11 +87,11 @@ jobs:
         shell: bash
         run: |
           cd qt-everywhere-src-${{env.VVV}}/build
-          tar -cvf qt${{env.VVV}}_macos_${{matrix.arch}}.tar qt${{env.VVV}}_macos_${{matrix.arch}}
+          tar -czf qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz qt${{env.VVV}}_macos_${{matrix.arch}}
       - uses: actions/upload-artifact@v4
         with:
-          name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar
-          path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar
+          name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
+          path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
 
   windows:
     name: windows

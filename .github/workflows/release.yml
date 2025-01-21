@@ -102,14 +102,14 @@ jobs:
         shell: bash
         run: |
           cd qt-everywhere-src-${{env.VVV}}/build
-          tar -cvf qt${{env.VVV}}_macos_${{matrix.arch}}.tar qt${{env.VVV}}_macos_${{matrix.arch}}
+          tar -czf qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz qt${{env.VVV}}_macos_${{matrix.arch}}
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar
-          asset_name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar
+          asset_path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
+          asset_name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
           asset_content_type: application/octet-stream
 
   windows:
