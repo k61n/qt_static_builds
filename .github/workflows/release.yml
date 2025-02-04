@@ -34,8 +34,8 @@ jobs:
           - os: macos-14
             arch: arm64
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - uses: actions/checkout@v4
       - name: deps
@@ -80,7 +80,7 @@ jobs:
           asset_name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
           asset_content_type: application/octet-stream
 
-  windows-mingw:
+  windows-x64:
     name: windows
     needs: release
     runs-on: ${{matrix.os}}
@@ -89,10 +89,13 @@ jobs:
         include:
           - os: windows-x64
             comp: mingw1120
-            path: C:\Qt\Tools\mingw1120_64\bin
+            path: C:\Qt\Tools\mingw1310_64\bin
+          - os: windows-x64
+            comp: llvm1706
+            path: C:\Qt\Tools\llvm-mingw1706_64\bin
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - name: download
         shell: powershell
@@ -102,29 +105,31 @@ jobs:
       - name: unpack
         shell: powershell
         run: |
-          7z.exe x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
           Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
       - name: configure
         shell: powershell
         run: |
+          $env:Path = "${{matrix.path}};" + $env:Path
           mkdir qt\build
           cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="${{matrix.path}}\gcc.exe" -DCMAKE_CXX_COMPILER="${{matrix.path}}\g++.exe" -G"Ninja"
+          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
       - name: build
         shell: powershell
         run: |
+          $env:Path = "${{matrix.path}};" + $env:Path
           cd qt\build
-          cmake.exe --build . --parallel $env:NUMBER_OF_PROCESSORS
+          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
       - name: install
         shell: powershell
         run: |
           cd qt\build
-          cmake.exe --install .
+          cmake --install .
       - name: pack
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64\*"
+          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64\*"
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -141,17 +146,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-2019
-            arch: x64
-            comp: msvc2019
-            vspath: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
           - os: windows-2022
             arch: x64
             comp: msvc2022
             vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - name: download
         shell: powershell
@@ -161,7 +162,7 @@ jobs:
       - name: unpack
         shell: powershell
         run: |
-          7z.exe x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
           Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
       - name: configure
         shell: cmd
@@ -186,7 +187,7 @@ jobs:
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
+          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -199,10 +200,19 @@ jobs:
   windows-arm:
     name: windows-arm64
     needs: release
-    runs-on: windows-arm64
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: windows-arm64
+            comp: msvc2022
+            flags: ""
+          - os: windows-arm64
+            comp: llvm1706
+            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - name: download
         shell: powershell
@@ -212,14 +222,14 @@ jobs:
       - name: unpack
         shell: powershell
         run: |
-          7z.exe x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
           Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
       - name: configure
         shell: powershell
         run: |
           mkdir qt\build
           cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_msvc2022_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests
+          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests ${{matrix.flags}}
       - name: build
         shell: powershell
         run: |
@@ -234,7 +244,7 @@ jobs:
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_msvc2022_arm64.zip" ".\qt${{env.VVV}}_windows_msvc2022_arm64\*"
+          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64\*"
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
