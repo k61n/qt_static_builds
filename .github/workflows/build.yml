@@ -174,7 +174,16 @@ jobs:
 
   windows-arm:
     name: windows-arm64
-    runs-on: windows-arm64
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: windows-arm64
+            comp: msvc2022
+            flags: ""
+          - os: windows-arm64
+            comp: llvm1706
+            flags: -no-sql-odcb -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
     env:
       VVV: "6.7.3"
       VV: "6.7"
@@ -187,14 +196,14 @@ jobs:
       - name: unpack
         shell: powershell
         run: |
-          7z.exe x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
           Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
       - name: configure
         shell: powershell
         run: |
           mkdir qt\build
           cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_msvc2022_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests
+          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests ${{matrix.flags}}
       - name: build
         shell: powershell
         run: |
@@ -209,8 +218,8 @@ jobs:
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_msvc2022_arm64.zip" ".\qt${{env.VVV}}_windows_msvc2022_arm64\*"
+          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64\*"
       - uses: actions/upload-artifact@v4
         with:
-          name: qt${{env.VVV}}_windows_msvc2022_arm64.zip
-          path: qt/build/qt${{env.VVV}}_windows_msvc2022_arm64.zip
+          name: qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
+          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
