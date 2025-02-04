@@ -61,7 +61,7 @@ jobs:
           name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
           path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
 
-  windows-mingw:
+  windows-x64:
     name: windows
     runs-on: ${{matrix.os}}
     strategy:
@@ -70,14 +70,9 @@ jobs:
           - os: windows-x64
             comp: mingw1120
             path: C:\Qt\Tools\mingw1120_64\bin
-# cannot build llvm from source for now
-#          - os: windows-2022
-#            comp: llvm
-#            version: 17.0.6
-#            memo: llvm1706
-#            path: C:\Program Files\LLVM\bin
-#            cpp: clang.exe
-#            cxx: clang++.exe
+          - os: windows-x64
+            comp: llvm1706
+            path: C:\Qt\Tools\llvm-mingw1706_64\bin
     env:
       VVV: "6.7.3"
       VV: "6.7"
@@ -95,12 +90,14 @@ jobs:
       - name: configure
         shell: powershell
         run: |
+          $env:Path = "${{matrix.path}};" + $env:Path
           mkdir qt\build
           cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="${{matrix.path}}\gcc.exe" -DCMAKE_CXX_COMPILER="${{matrix.path}}\g++.exe" -G"Ninja"
+          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
       - name: build
         shell: powershell
         run: |
+          $env:Path = "${{matrix.path}};" + $env:Path
           cd qt\build
           cmake.exe --build . --parallel $env:NUMBER_OF_PROCESSORS
       - name: install
