@@ -19,8 +19,8 @@ jobs:
           - os: macos-14
             arch: arm64
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - uses: actions/checkout@v4
       - name: deps
@@ -69,13 +69,13 @@ jobs:
         include:
           - os: windows-x64
             comp: mingw1120
-            path: C:\Qt\Tools\mingw1120_64\bin
+            path: C:\Qt\Tools\mingw1310_64\bin
           - os: windows-x64
             comp: llvm1706
             path: C:\Qt\Tools\llvm-mingw1706_64\bin
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - name: download
         shell: powershell
@@ -121,17 +121,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-2019
-            arch: x64
-            comp: msvc2019
-            vspath: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
           - os: windows-2022
             arch: x64
             comp: msvc2022
             vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - name: download
         shell: powershell
@@ -183,10 +179,10 @@ jobs:
             flags: ""
           - os: windows-arm64
             comp: llvm1706
-            flags: -no-sql-odcb -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
+            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
     env:
-      VVV: "6.7.3"
-      VV: "6.7"
+      VVV: "6.8.2"
+      VV: "6.8"
     steps:
       - name: download
         shell: powershell
