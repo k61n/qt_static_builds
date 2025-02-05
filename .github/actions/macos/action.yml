@@ -1,0 +1,47 @@
+name: macos build
+
+inputs:
+  vvv:
+    required: true
+    description: "Qt long version"
+  vv:
+    required: true
+    description: "Qt short version"
+  arch:
+    required: true
+    description: "Architecture, e.g. arm64 or x86_64"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.build.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.build.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - name: deps
+      id: build
+      shell: bash
+      run: |
+        brew install cmake ninja
+        wget "https://download.qt.io/archive/qt/${{inputs.vv}}/${{inputs.vvv}}/single/qt-everywhere-src-${{inputs.vvv}}.tar.xz"
+        tar -xvf "qt-everywhere-src-${{inputs.vvv}}.tar.xz"
+        cd "qt-everywhere-src-${{inputs.vvv}}"
+        mkdir build && cd build
+        ../configure \
+          -prefix "./qt${{inputs.vvv}}_macos_${{inputs.arch}}" \
+          -release \
+          -static \
+          -opensource \
+          -confirm-license \
+          -nomake examples \
+          -nomake tests \
+          -- \
+          -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}"
+        cmake --build . --parallel "$(sysctl -n hw.ncpu)"
+        cmake --install .
+        tar -czf "qt${{inputs.vvv}}_macos_${{inputs.arch}}.tar.gz" "qt${{inputs.vvv}}_macos_${{inputs.arch}}"
+        echo "fn=qt${{inputs.vvv}}_macos_${{inputs.arch}}.tar.gz" >> $GITHUB_OUTPUT
+        echo "path=qt-everywhere-src-${{inputs.vvv}}/build/qt${{inputs.vvv}}_macos_${{inputs.arch}}.tar.gz" >> $GITHUB_OUTPUT
