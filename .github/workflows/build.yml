@@ -8,7 +8,6 @@ on:
 
 jobs:
   macos:
-    name: macos
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -18,204 +17,174 @@ jobs:
             arch: x86_64
           - os: macos-14
             arch: arm64
-    env:
-      VVV: "6.8.2"
-      VV: "6.8"
     steps:
       - uses: actions/checkout@v4
-      - name: deps
-        shell: bash
-        run: |
-          brew install cmake ninja
-      - name: download
-        shell: bash
-        run: |
-          wget https://download.qt.io/archive/qt/$VV/$VVV/single/qt-everywhere-src-${{env.VVV}}.tar.xz
-      - name: unpack
-        shell: bash
-        run: |
-          tar -xvf qt-everywhere-src-${{env.VVV}}.tar.xz
-      - name: configure
-        shell: bash
-        run: |
-          cd qt-everywhere-src-${{env.VVV}}
-          mkdir build && cd build
-          ../configure -prefix ./qt${{env.VVV}}_macos_${{matrix.arch}} -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_OSX_ARCHITECTURES="${{matrix.arch}}"
-      - name: build
-        shell: bash
-        run: |
-          cd qt-everywhere-src-${{env.VVV}}/build
-          cmake --build . --parallel $(sysctl -n hw.ncpu)
-      - name: install
-        shell: bash
-        run: |
-          cd qt-everywhere-src-${{env.VVV}}/build
-          cmake --install .
-      - name: pack
-        shell: bash
-        run: |
-          cd qt-everywhere-src-${{env.VVV}}/build
-          tar -czf qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz qt${{env.VVV}}_macos_${{matrix.arch}}
+      - uses: ./.github/actions/macos
+        id: build
+        with:
+          vvv:  "6.8.2"
+          vv:   "6.8"
+          arch: ${{matrix.arch}}
       - uses: actions/upload-artifact@v4
         with:
-          name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
-          path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
+          name: ${{steps.build.outputs.fn}}
+          path: ${{steps.build.outputs.path}}
 
-  windows-x64:
-    name: windows
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-x64
-            comp: mingw1120
-            path: C:\Qt\Tools\mingw1310_64\bin
-          - os: windows-x64
-            comp: llvm1706
-            path: C:\Qt\Tools\llvm-mingw1706_64\bin
-    env:
-      VVV: "6.8.2"
-      VV: "6.8"
-    steps:
-      - name: download
-        shell: powershell
-        run: |
-          Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
-      - name: unpack
-        shell: powershell
-        run: |
-          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
-          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
-      - name: configure
-        shell: powershell
-        run: |
-          $env:Path = "${{matrix.path}};" + $env:Path
-          mkdir qt\build
-          cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
-      - name: build
-        shell: powershell
-        run: |
-          $env:Path = "${{matrix.path}};" + $env:Path
-          cd qt\build
-          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
-      - name: install
-        shell: powershell
-        run: |
-          cd qt\build
-          cmake --install .
-      - name: pack
-        shell: powershell
-        run: |
-          cd qt\build
-          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64\*"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
-          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
-
-  windows-msvc:
-    name: windows
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-2022
-            arch: x64
-            comp: msvc2022
-            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
-    env:
-      VVV: "6.8.2"
-      VV: "6.8"
-    steps:
-      - name: download
-        shell: powershell
-        run: |
-          Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
-      - name: unpack
-        shell: powershell
-        run: |
-          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
-          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
-      - name: configure
-        shell: cmd
-        run: |
-          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
-          mkdir qt\build
-          cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}" -platform win32-msvc -release -static -opensource -confirm-license -nomake examples -nomake tests -no-openssl
-      - name: build
-        shell: cmd
-        run: |
-          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
-          cd qt\build
-          cmake --build .
-      - name: install
-        shell: cmd
-        run: |
-          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
-          cd qt\build
-          cmake --install .
-      - name: pack
-        shell: powershell
-        run: |
-          cd qt\build
-          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
-          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
-
-  windows-arm:
-    name: windows-arm64
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-arm64
-            comp: msvc2022
-            flags: ""
-          - os: windows-arm64
-            comp: llvm1706
-            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
-    env:
-      VVV: "6.8.2"
-      VV: "6.8"
-    steps:
-      - name: download
-        shell: powershell
-        run: |
-          Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
-      - name: unpack
-        shell: powershell
-        run: |
-          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
-          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
-      - name: configure
-        shell: powershell
-        run: |
-          mkdir qt\build
-          cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests ${{matrix.flags}}
-      - name: build
-        shell: powershell
-        run: |
-          cd qt\build
-          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
-      - name: install
-        shell: powershell
-        run: |
-          cd qt\build
-          cmake --install .
-      - name: pack
-        shell: powershell
-        run: |
-          cd qt\build
-          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64\*"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
-          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
+#  windows-x64:
+#    name: windows
+#    runs-on: ${{matrix.os}}
+#    strategy:
+#      matrix:
+#        include:
+#          - os: windows-x64
+#            comp: mingw1120
+#            path: C:\Qt\Tools\mingw1310_64\bin
+#          - os: windows-x64
+#            comp: llvm1706
+#            path: C:\Qt\Tools\llvm-mingw1706_64\bin
+#    env:
+#      VVV: "6.8.2"
+#      VV: "6.8"
+#    steps:
+#      - name: download
+#        shell: powershell
+#        run: |
+#          Remove-Item * -Recurse -Force
+#          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
+#      - name: unpack
+#        shell: powershell
+#        run: |
+#          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+#          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
+#      - name: configure
+#        shell: powershell
+#        run: |
+#          $env:Path = "${{matrix.path}};" + $env:Path
+#          mkdir qt\build
+#          cd qt\build
+#          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
+#      - name: build
+#        shell: powershell
+#        run: |
+#          $env:Path = "${{matrix.path}};" + $env:Path
+#          cd qt\build
+#          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
+#      - name: install
+#        shell: powershell
+#        run: |
+#          cd qt\build
+#          cmake --install .
+#      - name: pack
+#        shell: powershell
+#        run: |
+#          cd qt\build
+#          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64\*"
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
+#          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
+#
+#  windows-msvc:
+#    name: windows
+#    runs-on: ${{matrix.os}}
+#    strategy:
+#      matrix:
+#        include:
+#          - os: windows-2022
+#            arch: x64
+#            comp: msvc2022
+#            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
+#    env:
+#      VVV: "6.8.2"
+#      VV: "6.8"
+#    steps:
+#      - name: download
+#        shell: powershell
+#        run: |
+#          Remove-Item * -Recurse -Force
+#          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
+#      - name: unpack
+#        shell: powershell
+#        run: |
+#          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+#          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
+#      - name: configure
+#        shell: cmd
+#        run: |
+#          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+#          mkdir qt\build
+#          cd qt\build
+#          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}" -platform win32-msvc -release -static -opensource -confirm-license -nomake examples -nomake tests -no-openssl
+#      - name: build
+#        shell: cmd
+#        run: |
+#          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+#          cd qt\build
+#          cmake --build .
+#      - name: install
+#        shell: cmd
+#        run: |
+#          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+#          cd qt\build
+#          cmake --install .
+#      - name: pack
+#        shell: powershell
+#        run: |
+#          cd qt\build
+#          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+#          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+#
+#  windows-arm:
+#    name: windows-arm64
+#    runs-on: ${{matrix.os}}
+#    strategy:
+#      matrix:
+#        include:
+#          - os: windows-arm64
+#            comp: msvc2022
+#            flags: ""
+#          - os: windows-arm64
+#            comp: llvm1706
+#            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
+#    env:
+#      VVV: "6.8.2"
+#      VV: "6.8"
+#    steps:
+#      - name: download
+#        shell: powershell
+#        run: |
+#          Remove-Item * -Recurse -Force
+#          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
+#      - name: unpack
+#        shell: powershell
+#        run: |
+#          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
+#          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
+#      - name: configure
+#        shell: powershell
+#        run: |
+#          mkdir qt\build
+#          cd qt\build
+#          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests ${{matrix.flags}}
+#      - name: build
+#        shell: powershell
+#        run: |
+#          cd qt\build
+#          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
+#      - name: install
+#        shell: powershell
+#        run: |
+#          cd qt\build
+#          cmake --install .
+#      - name: pack
+#        shell: powershell
+#        run: |
+#          cd qt\build
+#          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64\*"
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
+#          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
