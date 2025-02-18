@@ -1,0 +1,77 @@
+name: windows-msvc build
+
+inputs:
+  vvv:
+    required: true
+    description: "Qt long version"
+  vv:
+    required: true
+    description: "Qt short version"
+  arch:
+    required: true
+    description: "Architecture, e.g. arm64 or x64"
+  comp:
+    required: true
+    description: "Compiler, e.g. msvc2022"
+  vspath:
+    required: true
+    description: "Path to MSVC"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.pack.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.pack.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - name: download and unpack
+      shell: powershell
+      run: |
+        Start-BitsTransfer -Source `
+          "https://download.qt.io/archive/qt/${{inputs.vv}}/${{inputs.vvv}}/single/qt-everywhere-src-${{inputs.vvv}}.zip" `
+          -Destination .
+        7z x .\qt-everywhere-src-${{inputs.vvv}}.zip -o"./"
+        Rename-Item -Path "qt-everywhere-src-${{inputs.vvv}}" -NewName "qt"
+    - name: configure
+      shell: cmd
+      run: |
+        call "${{inputs.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        mkdir qt\build
+        cd qt\build
+        ..\configure.bat ^
+          -prefix ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}" ^
+          -platform win32-msvc ^
+          -release ^
+          -static ^
+          -opensource ^
+          -confirm-license ^
+          -nomake examples ^
+          -nomake tests ^
+          -no-openssl
+    - name: build
+      shell: cmd
+      run: |
+        call "${{inputs.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        cd qt\build
+        cmake --build .
+    - name: install
+      shell: cmd
+      run: |
+        call "${{inputs.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        cd qt\build
+        cmake --install .
+    - name: pack
+      id: pack
+      shell: powershell
+      run: |
+        cd qt\build
+        7z a -tzip `
+          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}.zip" `
+          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}\*"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value `
+          "fn=qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value `
+          "path=qt/build/qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}.zip"

@@ -109,7 +109,6 @@ jobs:
           asset_content_type: application/octet-stream
 
   windows-msvc:
-    name: windows
     needs: release
     runs-on: ${{matrix.os}}
     strategy:
@@ -119,51 +118,23 @@ jobs:
             arch: x64
             comp: msvc2022
             vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
-    env:
-      VVV: "6.8.2"
-      VV: "6.8"
     steps:
-      - name: download
-        shell: powershell
-        run: |
-          Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
-      - name: unpack
-        shell: powershell
-        run: |
-          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
-          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
-      - name: configure
-        shell: cmd
-        run: |
-          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
-          mkdir qt\build
-          cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}" -platform win32-msvc -release -static -opensource -confirm-license -nomake examples -nomake tests -no-openssl
-      - name: build
-        shell: cmd
-        run: |
-          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
-          cd qt\build
-          cmake --build .
-      - name: install
-        shell: cmd
-        run: |
-          call "${{matrix.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
-          cd qt\build
-          cmake --install .
-      - name: pack
-        shell: powershell
-        run: |
-          cd qt\build
-          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/windows-msvc
+        id: build
+        with:
+          vvv:    "6.8.2"
+          vv:     "6.8"
+          arch:   ${{matrix.arch}}
+          comp:   ${{matrix.comp}}
+          vspath: ${{matrix.vspath}}
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
-          asset_name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_path: ${{steps.build.outputs.path}}
+          asset_name: ${{steps.build.outputs.fn}}
           asset_content_type: application/octet-stream
 
   windows-arm:
