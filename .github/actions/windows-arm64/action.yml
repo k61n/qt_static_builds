@@ -1,0 +1,56 @@
+name: windows-arm64 build
+
+inputs:
+  vvv:
+    required: true
+    description: "Qt long version"
+  vv:
+    required: true
+    description: "Qt short version"
+  comp:
+    required: true
+    description: "Compiler, e.g. msvc2022"
+  flags:
+    required: true
+    description: "Extra cmake flags"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.build.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.build.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - id: build
+      shell: powershell
+      run: |
+        Remove-Item .\qt* -Recurse -Force -ErrorAction SilentlyContinue
+        $env:Path = "C:\Qt\Tools\${{inputs.comp}}_arm64\bin;" + $env:Path
+        Start-BitsTransfer -Source `
+          "https://download.qt.io/archive/qt/${{inputs.vv}}/${{inputs.vvv}}/single/qt-everywhere-src-${{inputs.vvv}}.zip" `
+          -Destination .
+        7z x .\qt-everywhere-src-${{inputs.vvv}}.zip -o"./"
+        Rename-Item -Path "qt-everywhere-src-${{inputs.vvv}}" -NewName "qt"
+        mkdir qt\build
+        cd qt\build
+        ..\configure.bat `
+          -prefix ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64" `
+          -release `
+          -static `
+          -opensource `
+          -confirm-license `
+          -nomake examples `
+          -nomake tests `
+          ${{inputs.flags}}
+        cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
+        cmake --install .
+        7z a -tzip `
+          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64.zip" `
+          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64\*"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value `
+          "fn=qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64.zip"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value `
+          "path=qt/build/qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64.zip"

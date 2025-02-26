@@ -84,78 +84,51 @@ jobs:
 #          name: qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
 #          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
 
-  windows-msvc:
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-2022
-            arch: x64
-            comp: msvc2022
-            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/windows-msvc
-        id: build
-        with:
-          vvv:    "6.8.2"
-          vv:     "6.8"
-          arch:   ${{matrix.arch}}
-          comp:   ${{matrix.comp}}
-          vspath: ${{matrix.vspath}}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
-
-#  windows-arm:
-#    name: windows-arm64
+#  windows-msvc:
 #    runs-on: ${{matrix.os}}
 #    strategy:
 #      matrix:
 #        include:
-#          - os: windows-arm64
+#          - os: windows-2022
+#            arch: x64
 #            comp: msvc2022
-#            flags: ""
-#          - os: windows-arm64
-#            comp: llvm1706
-#            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
-#    env:
-#      VVV: "6.8.2"
-#      VV: "6.8"
+#            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
 #    steps:
-#      - name: download
-#        shell: powershell
-#        run: |
-#          Remove-Item * -Recurse -Force
-#          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
-#      - name: unpack
-#        shell: powershell
-#        run: |
-#          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
-#          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
-#      - name: configure
-#        shell: powershell
-#        run: |
-#          mkdir qt\build
-#          cd qt\build
-#          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64" -release -static -opensource -confirm-license -nomake examples -nomake tests ${{matrix.flags}}
-#      - name: build
-#        shell: powershell
-#        run: |
-#          cd qt\build
-#          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
-#      - name: install
-#        shell: powershell
-#        run: |
-#          cd qt\build
-#          cmake --install .
-#      - name: pack
-#        shell: powershell
-#        run: |
-#          cd qt\build
-#          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_arm64\*"
+#      - uses: actions/checkout@v4
+#      - uses: ./.github/actions/windows-msvc
+#        id: build
+#        with:
+#          vvv:    "6.8.2"
+#          vv:     "6.8"
+#          arch:   ${{matrix.arch}}
+#          comp:   ${{matrix.comp}}
+#          vspath: ${{matrix.vspath}}
 #      - uses: actions/upload-artifact@v4
 #        with:
-#          name: qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
-#          path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_arm64.zip
+#          name: ${{steps.build.outputs.fn}}
+#          path: ${{steps.build.outputs.path}}
+
+  windows-arm:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: windows-arm64
+            comp: msvc2022
+            flags: ""
+          - os: windows-arm64
+            comp: llvm1706
+            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/windows-arm64
+        id: build
+        with:
+          vvv:    "6.8.2"
+          vv:     "6.8"
+          comp:   ${{matrix.comp}}
+          flags:  ${{matrix.flags}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: ${{steps.build.outputs.path}}
