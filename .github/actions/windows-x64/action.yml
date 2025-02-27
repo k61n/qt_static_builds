@@ -53,7 +53,8 @@ runs:
           -confirm-license `
           -nomake examples `
           -nomake tests `
-          -- -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
+          -- `
+          -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
         cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
         cmake --install .
         7z a -tzip `

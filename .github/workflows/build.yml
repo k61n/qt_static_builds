@@ -7,28 +7,28 @@ on:
     branches: [ "main" ]
 
 jobs:
-#  macos:
-#    runs-on: ${{matrix.os}}
-#    strategy:
-#      matrix:
-#        os: [macos-13, macos-14]
-#        include:
-#          - os: macos-13
-#            arch: x86_64
-#          - os: macos-14
-#            arch: arm64
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: ./.github/actions/macos
-#        id: build
-#        with:
-#          vvv:  "6.8.2"
-#          vv:   "6.8"
-#          arch: ${{matrix.arch}}
-#      - uses: actions/upload-artifact@v4
-#        with:
-#          name: ${{steps.build.outputs.fn}}
-#          path: ${{steps.build.outputs.path}}
+  macos:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/macos
+        id: build
+        with:
+          vvv:  "6.8.2"
+          vv:   "6.8"
+          arch: ${{matrix.arch}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: ${{steps.build.outputs.path}}
 
   windows-x64:
     runs-on: ${{matrix.os}}
@@ -58,51 +58,51 @@ jobs:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
 
-#  windows-msvc:
-#    runs-on: ${{matrix.os}}
-#    strategy:
-#      matrix:
-#        include:
-#          - os: windows-2022
-#            arch: x64
-#            comp: msvc2022
-#            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: ./.github/actions/windows-msvc
-#        id: build
-#        with:
-#          vvv:    "6.8.2"
-#          vv:     "6.8"
-#          arch:   ${{matrix.arch}}
-#          comp:   ${{matrix.comp}}
-#          vspath: ${{matrix.vspath}}
-#      - uses: actions/upload-artifact@v4
-#        with:
-#          name: ${{steps.build.outputs.fn}}
-#          path: ${{steps.build.outputs.path}}
+  windows-msvc:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: windows-2022
+            arch: x64
+            comp: msvc2022
+            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/windows-msvc
+        id: build
+        with:
+          vvv:    "6.8.2"
+          vv:     "6.8"
+          arch:   ${{matrix.arch}}
+          comp:   ${{matrix.comp}}
+          vspath: ${{matrix.vspath}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: ${{steps.build.outputs.path}}
 
-#  windows-arm:
-#    runs-on: ${{matrix.os}}
-#    strategy:
-#      matrix:
-#        include:
-#          - os: windows-arm64
-#            comp: msvc2022
-#            flags: ""
-#          - os: windows-arm64
-#            comp: llvm1706
-#            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: ./.github/actions/windows-arm64
-#        id: build
-#        with:
-#          vvv:    "6.8.2"
-#          vv:     "6.8"
-#          comp:   ${{matrix.comp}}
-#          flags:  ${{matrix.flags}}
-#      - uses: actions/upload-artifact@v4
-#        with:
-#          name: ${{steps.build.outputs.fn}}
-#          path: ${{steps.build.outputs.path}}
+  windows-arm:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: windows-arm64
+            comp: msvc2022
+            flags: ""
+          - os: windows-arm64
+            comp: llvm1706
+            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/windows-arm64
+        id: build
+        with:
+          vvv:    "6.8.2"
+          vv:     "6.8"
+          comp:   ${{matrix.comp}}
+          flags:  ${{matrix.flags}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: ${{steps.build.outputs.path}}
