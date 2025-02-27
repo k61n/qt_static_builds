@@ -50,62 +50,36 @@ jobs:
           asset_content_type: application/octet-stream
 
   windows-x64:
-    name: windows
     needs: release
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
         include:
-          - os: windows-x64
-            comp: mingw1310
-            path: C:\Qt\Tools\mingw1310_64\bin
-          - os: windows-x64
+          - os: windows-2022
             comp: llvm1706
-            path: C:\Qt\Tools\llvm-mingw1706_64\bin
-    env:
-      VVV: "6.8.2"
-      VV: "6.8"
+            archive: llvm-mingw-20231128-ucrt-x86_64.zip
+            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
+          - os: windows-2022
+            comp: mingw1310
+            archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
     steps:
-      - name: download
-        shell: powershell
-        run: |
-          Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/archive/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-src-${{env.VVV}}.zip" -Destination .
-      - name: unpack
-        shell: powershell
-        run: |
-          7z x .\qt-everywhere-src-${{env.VVV}}.zip -o"./"
-          Rename-Item -Path "qt-everywhere-src-${{env.VVV}}" -NewName "qt"
-      - name: configure
-        shell: powershell
-        run: |
-          $env:Path = "${{matrix.path}};" + $env:Path
-          mkdir qt\build
-          cd qt\build
-          ..\configure.bat -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64" -release -static -opensource -confirm-license -nomake examples -nomake tests -- -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
-      - name: build
-        shell: powershell
-        run: |
-          $env:Path = "${{matrix.path}};" + $env:Path
-          cd qt\build
-          cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
-      - name: install
-        shell: powershell
-        run: |
-          cd qt\build
-          cmake --install .
-      - name: pack
-        shell: powershell
-        run: |
-          cd qt\build
-          7z a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_x64\*"
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/windows-x64
+        id: build
+        with:
+          vvv:      "6.8.2"
+          vv:       "6.8"
+          comp:     ${{matrix.comp}}
+          archive:  ${{matrix.archive}}
+          link:     ${{matrix.link}}
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
-          asset_name: qt${{env.VVV}}_windows_${{matrix.comp}}_x64.zip
+          asset_path: ${{steps.build.outputs.path}}
+          asset_name: ${{steps.build.outputs.fn}}
           asset_content_type: application/octet-stream
 
   windows-msvc:
