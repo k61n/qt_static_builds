@@ -22,7 +22,7 @@ jobs:
       - uses: ./.github/actions/macos
         id: build
         with:
-          vvv:  "6.8.2"
+          vvv:  "6.8.3"
           vv:   "6.8"
           arch: ${{matrix.arch}}
       - uses: actions/upload-artifact@v4
@@ -48,7 +48,7 @@ jobs:
       - uses: ./.github/actions/windows-x64
         id: build
         with:
-          vvv:      "6.8.2"
+          vvv:      "6.8.3"
           vv:       "6.8"
           comp:     ${{matrix.comp}}
           archive:  ${{matrix.archive}}
@@ -72,7 +72,7 @@ jobs:
       - uses: ./.github/actions/windows-msvc
         id: build
         with:
-          vvv:    "6.8.2"
+          vvv:    "6.8.3"
           vv:     "6.8"
           arch:   ${{matrix.arch}}
           comp:   ${{matrix.comp}}
@@ -98,7 +98,7 @@ jobs:
       - uses: ./.github/actions/windows-arm64
         id: build
         with:
-          vvv:    "6.8.2"
+          vvv:    "6.8.3"
           vv:     "6.8"
           comp:   ${{matrix.comp}}
           flags:  ${{matrix.flags}}
