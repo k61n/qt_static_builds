@@ -46,7 +46,7 @@ runs:
         mkdir qt\build
         cd qt\build
         ..\configure.bat `
-          -prefix ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_x64" `
+          -prefix ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_x64" `
           -release `
           -static `
           -opensource `
@@ -58,9 +58,9 @@ runs:
         cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
         cmake --install .
         7z a -tzip `
-          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_x64.zip" `
-          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_x64\*"
+          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_x64.zip" `
+          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_x64\*"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "fn=qt${{inputs.vvv}}_windows_${{inputs.comp}}_x64.zip"
+          "fn=qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_x64.zip"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "path=qt/build/qt${{inputs.vvv}}_windows_${{inputs.comp}}_x64.zip"
+          "path=qt/build/qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_x64.zip"
