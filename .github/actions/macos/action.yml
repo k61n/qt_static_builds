@@ -30,7 +30,7 @@ runs:
         cd "qt-everywhere-src-${{inputs.vvv}}"
         mkdir build && cd build
         ../configure \
-          -prefix "./qt${{inputs.vvv}}_macos_${{inputs.arch}}" \
+          -prefix "./qt${{inputs.vvv}}_static_macos_${{inputs.arch}}" \
           -release \
           -static \
           -opensource \
@@ -41,6 +41,6 @@ runs:
           -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}"
         cmake --build . --parallel "$(sysctl -n hw.ncpu)"
         cmake --install .
-        tar -czf "qt${{inputs.vvv}}_macos_${{inputs.arch}}.tar.gz" "qt${{inputs.vvv}}_macos_${{inputs.arch}}"
-        echo "fn=qt${{inputs.vvv}}_macos_${{inputs.arch}}.tar.gz" >> $GITHUB_OUTPUT
-        echo "path=qt-everywhere-src-${{inputs.vvv}}/build/qt${{inputs.vvv}}_macos_${{inputs.arch}}.tar.gz" >> $GITHUB_OUTPUT
+        tar -czf "qt${{inputs.vvv}}_static_macos_${{inputs.arch}}.tar.gz" "qt${{inputs.vvv}}_static_macos_${{inputs.arch}}"
+        echo "fn=qt${{inputs.vvv}}_static_macos_${{inputs.arch}}.tar.gz" >> $GITHUB_OUTPUT
+        echo "path=qt-everywhere-src-${{inputs.vvv}}/build/qt${{inputs.vvv}}_static_macos_${{inputs.arch}}.tar.gz" >> $GITHUB_OUTPUT

@@ -37,20 +37,21 @@ runs:
         mkdir qt\build
         cd qt\build
         ..\configure.bat `
-          -prefix ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64" `
+          -prefix ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_arm64" `
           -release `
           -static `
           -opensource `
           -confirm-license `
           -nomake examples `
           -nomake tests `
+          -skip qtwebengine `
           ${{inputs.flags}}
         cmake --build . --parallel $env:NUMBER_OF_PROCESSORS
         cmake --install .
         7z a -tzip `
-          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64.zip" `
-          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64\*"
+          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_arm64.zip" `
+          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_arm64\*"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "fn=qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64.zip"
+          "fn=qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_arm64.zip"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "path=qt/build/qt${{inputs.vvv}}_windows_${{inputs.comp}}_arm64.zip"
+          "path=qt/build/qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_arm64.zip"

@@ -42,7 +42,7 @@ runs:
         mkdir qt\build
         cd qt\build
         ..\configure.bat ^
-          -prefix ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}" ^
+          -prefix ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}" ^
           -platform win32-msvc ^
           -release ^
           -static ^
@@ -69,9 +69,9 @@ runs:
       run: |
         cd qt\build
         7z a -tzip `
-          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}.zip" `
-          ".\qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}\*"
+          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}.zip" `
+          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}\*"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "fn=qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
+          "fn=qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "path=qt/build/qt${{inputs.vvv}}_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
+          "path=qt/build/qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
