@@ -25,8 +25,8 @@ runs:
       shell: bash
       run: |
         brew install cmake ninja
-        wget "https://download.qt.io/archive/qt/${{inputs.vv}}/${{inputs.vvv}}/single/qt-everywhere-src-${{inputs.vvv}}.tar.xz"
-        tar -xvf "qt-everywhere-src-${{inputs.vvv}}.tar.xz"
+        wget -q "https://download.qt.io/archive/qt/${{inputs.vv}}/${{inputs.vvv}}/single/qt-everywhere-src-${{inputs.vvv}}.tar.xz"
+        tar -xf "qt-everywhere-src-${{inputs.vvv}}.tar.xz"
         cd "qt-everywhere-src-${{inputs.vvv}}"
         mkdir build && cd build
         ../configure \
@@ -37,6 +37,7 @@ runs:
           -confirm-license \
           -nomake examples \
           -nomake tests \
+          -skip qtwebengine \
           -- \
           -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}"
         cmake --build . --parallel "$(sysctl -n hw.ncpu)"
