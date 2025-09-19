@@ -8,7 +8,6 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'qt5'
     outputs:
       upload_url: ${{steps.create_release.outputs.upload_url}}
     steps:
@@ -23,7 +22,6 @@ jobs:
           prerelease: false
 
   macos:
-    if: github.ref_name == 'qt5'
     name: macos
     needs: release
     runs-on: ${{matrix.os}}
@@ -38,14 +36,15 @@ jobs:
             arch: arm64
             prefix: /opt/homebrew
     env:
-      VVV: "5.15.16"
+      VVV: "5.15.17"
       VV: "5.15"
     steps:
       - uses: actions/checkout@v4
       - name: deps
         shell: bash
         run: |
-          brew install boost freetype glib hunspell jpeg-turbo libpng libtiff make md4c node pcre2 pkgconf sqlite webp zstd
+          brew install boost freetype glib hunspell jpeg-turbo libpng libtiff \
+            make md4c node pcre2 pkgconf sqlite webp zstd
       - name: download
         shell: bash
         run: |
@@ -53,34 +52,35 @@ jobs:
       - name: unpack
         shell: bash
         run: |
-          tar -xvf qt-everywhere-opensource-src-${{env.VVV}}.tar.xz
+          tar -xf qt-everywhere-opensource-src-${{env.VVV}}.tar.xz
       - name: patch
         shell: bash
         run: |
           rm -rf qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost
-          ln -s ${{matrix.prefix}}/opt/boost/include/boost qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include
-          cp patches/qt5/35d566724c48180c9a372c2ed50a253871a51574.diff qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native
-          cp patches/qt5/5a07e1967dcc925d9def47accadae991436b9686.diff qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native
+          ln -s ${{matrix.prefix}}/opt/boost/include/boost \
+            qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include
+          cp patches/qt5/35d566724c48180c9a372c2ed50a253871a51574.diff \
+            qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native
+          cp patches/qt5/5a07e1967dcc925d9def47accadae991436b9686.diff \
+            qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native
           cd qt-everywhere-src-${{env.VVV}}/qtlocation/src/3rdparty/mapbox-gl-native
           patch < 35d566724c48180c9a372c2ed50a253871a51574.diff
           patch < 5a07e1967dcc925d9def47accadae991436b9686.diff
           cd ../../../../..
-          cp patches/qt5/0001-CVE-2023-51714-qtbase-5.15.diff qt-everywhere-src-${{env.VVV}}/qtbase
-          cp patches/qt5/0002-CVE-2023-51714-qtbase-5.15.diff qt-everywhere-src-${{env.VVV}}/qtbase
-          cp patches/qt5/CVE-2024-25580-qtbase-5.15.diff qt-everywhere-src-${{env.VVV}}/qtbase
-          cp patches/qt5/CVE-2024-39936-qtbase-5.15.patch qt-everywhere-src-${{env.VVV}}/qtbase
+          cp patches/qt5/CVE-2024-39936-qtbase-5.15.patch \
+            qt-everywhere-src-${{env.VVV}}/qtbase
           cd qt-everywhere-src-${{env.VVV}}/qtbase
-          patch < 0001-CVE-2023-51714-qtbase-5.15.diff
-          patch < 0002-CVE-2023-51714-qtbase-5.15.diff
-          patch < CVE-2024-25580-qtbase-5.15.diff
           patch < CVE-2024-39936-qtbase-5.15.patch
           cd ../..
-          cp patches/qt5/CVE-2024-36048-qtnetworkauth-5.15.diff qt-everywhere-src-${{env.VVV}}/qtnetworkauth
+          cp patches/qt5/CVE-2024-36048-qtnetworkauth-5.15.diff \
+            qt-everywhere-src-${{env.VVV}}/qtnetworkauth
           cd qt-everywhere-src-${{env.VVV}}/qtnetworkauth
           patch < CVE-2024-36048-qtnetworkauth-5.15.diff
           cd ../..
-          cp patches/qt5/qtvirtualkeyboard0.diff qt-everywhere-src-${{env.VVV}}/qtvirtualkeyboard/src/plugins/hunspell/hunspellinputmethod
-          cp patches/qt5/qtvirtualkeyboard1.diff qt-everywhere-src-${{env.VVV}}/qtvirtualkeyboard/src/plugins/hunspell/hunspellinputmethod
+          cp patches/qt5/qtvirtualkeyboard0.diff \
+            qt-everywhere-src-${{env.VVV}}/qtvirtualkeyboard/src/plugins/hunspell/hunspellinputmethod
+          cp patches/qt5/qtvirtualkeyboard1.diff \
+            qt-everywhere-src-${{env.VVV}}/qtvirtualkeyboard/src/plugins/hunspell/hunspellinputmethod
           cd qt-everywhere-src-${{env.VVV}}/qtvirtualkeyboard/src/plugins/hunspell/hunspellinputmethod
           patch < qtvirtualkeyboard0.diff
           patch < qtvirtualkeyboard1.diff
@@ -89,7 +89,16 @@ jobs:
         run: |
           cd qt-everywhere-src-${{env.VVV}}
           mkdir build && cd build
-          ../configure -prefix ./qt${{env.VVV}}_macos_${{matrix.arch}} -release -static -opensource -confirm-license -nomake examples -nomake tests -skip qtwebengine QMAKE_APPLE_DEVICE_ARCHS=${{matrix.arch}}
+          ../configure \
+            -prefix ./qt${{env.VVV}}_static_macos_${{matrix.arch}} \
+            -release \
+            -static \
+            -opensource \
+            -confirm-license \
+            -nomake examples \
+            -nomake tests \
+            -skip qtwebengine \
+            QMAKE_APPLE_DEVICE_ARCHS=${{matrix.arch}}
       - name: build
         shell: bash
         run: |
@@ -104,39 +113,41 @@ jobs:
         shell: bash
         run: |
           cd qt-everywhere-src-${{env.VVV}}/build
-          tar -czf qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz qt${{env.VVV}}_macos_${{matrix.arch}}
+          tar -czf qt${{env.VVV}}_static_macos_${{matrix.arch}}.tar.gz \
+            qt${{env.VVV}}_static_macos_${{matrix.arch}}
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
-          asset_name: qt${{env.VVV}}_macos_${{matrix.arch}}.tar.gz
+          asset_path: qt-everywhere-src-${{env.VVV}}/build/qt${{env.VVV}}_static_macos_${{matrix.arch}}.tar.gz
+          asset_name: qt${{env.VVV}}_static_macos_${{matrix.arch}}.tar.gz
           asset_content_type: application/octet-stream
 
   windows-mingw:
-    if: github.ref_name == 'qt5'
     name: windows
     needs: release
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
         include:
-          - os: windows-x32
-            arch: x86
+          - os: win2019
+            arch: 32
             comp: mingw810
-          - os: windows-2019
-            arch: x64
+          - os: win2019
+            arch: 64
             comp: mingw810
     env:
-      VVV: "5.15.16"
+      VVV: "5.15.17"
       VV: "5.15"
     steps:
       - name: download
         shell: powershell
         run: |
           Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/official_releases/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-opensource-src-${{env.VVV}}.zip" -Destination .
+          Start-BitsTransfer -Source `
+            "https://download.qt.io/official_releases/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-opensource-src-${{env.VVV}}.zip" `
+            -Destination .
       - name: unpack
         shell: powershell
         run: |
@@ -145,56 +156,72 @@ jobs:
       - name: configure
         shell: powershell
         run: |
+          $env:Path = "C:\Qt\Tools\${{matrix.comp}}_${{matrix.arch}}\bin;" + $env:Path
           mkdir qt\build
           cd qt\build
-          ..\configure.bat -opensource -confirm-license -release -static -platform win32-g++ -opengl desktop -nomake examples -nomake tests -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}"
+          ..\configure.bat `
+            -prefix ".\qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}" `
+            -release `
+            -static `
+            -opensource `
+            -confirm-license `
+            -platform win32-g++ `
+            -opengl desktop `
+            -nomake examples `
+            -nomake tests `
+            -skip qtwebengine
       - name: build
         shell: powershell
         run: |
+          $env:Path = "C:\Qt\Tools\${{matrix.comp}}_${{matrix.arch}}\bin;" + $env:Path
           cd qt\build
           mingw32-make.exe -j $env:NUMBER_OF_PROCESSORS
       - name: install
         shell: powershell
         run: |
+          $env:Path = "C:\Qt\Tools\${{matrix.comp}}_${{matrix.arch}}\bin;" + $env:Path
           cd qt\build
           mingw32-make.exe install -j $env:NUMBER_OF_PROCESSORS
       - name: pack
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
+          7z.exe a -tzip `
+            ".\qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}.zip" `
+            ".\qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}\*"
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
-          asset_name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_path: qt/build/qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_name: qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}.zip
           asset_content_type: application/octet-stream
 
   windows-msvc:
-    if: github.ref_name == 'qt5'
     name: windows
     needs: release
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
         include:
-          - os: windows-2019
+          - os: win2019
             arch: x86
             comp: msvc2019
-          - os: windows-2019
+          - os: win2019
             arch: x64
             comp: msvc2019
     env:
-      VVV: "5.15.16"
+      VVV: "5.15.17"
       VV: "5.15"
     steps:
       - name: download
         shell: powershell
         run: |
           Remove-Item * -Recurse -Force
-          Start-BitsTransfer -Source "https://download.qt.io/official_releases/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-opensource-src-${{env.VVV}}.zip" -Destination .
+          Start-BitsTransfer -Source `
+            "https://download.qt.io/official_releases/qt/${{env.VV}}/${{env.VVV}}/single/qt-everywhere-opensource-src-${{env.VVV}}.zip" `
+            -Destination .
       - name: unpack
         shell: powershell
         run: |
@@ -203,32 +230,52 @@ jobs:
       - name: configure
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+          call ^
+            "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" ^
+            ${{matrix.arch}}
           mkdir qt\build
           cd qt\build
-          ..\configure.bat -opensource -confirm-license -release -static -platform win32-msvc -opengl desktop -nomake examples -nomake tests -prefix ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}"
+          ..\configure.bat ^
+            -prefix ".\qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}" ^
+            -release ^
+            -static ^
+            -opensource ^
+            -confirm-license ^
+            -platform win32-msvc ^
+            -opengl desktop ^
+            -nomake examples ^
+            -nomake tests ^
+            -skip qtwebengine ^
+            -mp
       - name: build
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+          call ^
+            "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" ^
+            ${{matrix.arch}}
+          set CL=/MP
           cd qt\build
           nmake
       - name: install
         shell: cmd
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{matrix.arch}}
+          call ^
+            "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" ^
+            ${{matrix.arch}}
           cd qt\build
           nmake install
       - name: pack
         shell: powershell
         run: |
           cd qt\build
-          7z.exe a -tzip ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip" ".\qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}\*"
+          7z.exe a -tzip `
+            ".\qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}.zip" `
+            ".\qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}\*"
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{needs.release.outputs.upload_url}}
-          asset_path: qt/build/qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
-          asset_name: qt${{env.VVV}}_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_path: qt/build/qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}.zip
+          asset_name: qt${{env.VVV}}_static_windows_${{matrix.comp}}_${{matrix.arch}}.zip
           asset_content_type: application/octet-stream
