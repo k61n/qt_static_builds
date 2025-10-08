@@ -35,8 +35,8 @@ jobs:
       - uses: ./.github/actions/macos
         id: build
         with:
-          vvv:  "6.9.3"
-          vv:   "6.9"
+          vvv:  "6.10.0"
+          vv:   "6.10"
           arch: ${{matrix.arch}}
       - uses: actions/upload-release-asset@v1
         env:
@@ -66,8 +66,8 @@ jobs:
       - uses: ./.github/actions/windows-x64
         id: build
         with:
-          vvv:      "6.9.3"
-          vv:       "6.9"
+          vvv:      "6.10.0"
+          vv:       "6.10"
           comp:     ${{matrix.comp}}
           archive:  ${{matrix.archive}}
           link:     ${{matrix.link}}
@@ -95,8 +95,8 @@ jobs:
       - uses: ./.github/actions/windows-msvc
         id: build
         with:
-          vvv:    "6.9.3"
-          vv:     "6.9"
+          vvv:    "6.10.0"
+          vv:     "6.10"
           arch:   ${{matrix.arch}}
           comp:   ${{matrix.comp}}
           vspath: ${{matrix.vspath}}
@@ -126,8 +126,8 @@ jobs:
       - uses: ./.github/actions/windows-arm64
         id: build
         with:
-          vvv:    "6.9.3"
-          vv:     "6.9"
+          vvv:    "6.10.0"
+          vv:     "6.10"
           comp:   ${{matrix.comp}}
           flags:  ${{matrix.flags}}
       - uses: actions/upload-release-asset@v1
