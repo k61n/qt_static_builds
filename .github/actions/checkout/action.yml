@@ -1,0 +1,46 @@
+name: "Checkout Static Qt"
+description: "Downloads a prebuilt static Qt and outputs its absolute path"
+
+inputs:
+  version:
+    required: true
+    description: "Qt long version, e.g. 6.10.0"
+  compiler:
+    required: false
+    description: "Compiler for Windows, e.g. llvm1706|mingw1310|msvc2022"
+outputs:
+  qtpath:
+    description: "Path to qt"
+    value: ${{ steps.unix.outputs.qtpath || steps.windows.outputs.qtpath }}
+
+runs:
+  using: composite
+  steps:
+    - id: unix
+      shell: bash
+      if: runner.os != 'Windows'
+      run: |
+        os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
+        arch=$(uname -m)
+        wget -q \
+          "https://github.com/k61n/qt_static_builds/releases/download/${{inputs.version}}/qt${{inputs.version}}_static_${os}_${arch}.tar.gz"
+        tar -xf \
+          "qt${{inputs.version}}_static_${os}_${arch}.tar.gz"
+        mv "qt${{inputs.version}}_static_${os}_${arch}" \
+          "qt${{inputs.version}}"
+        rm "qt${{inputs.version}}_static_${os}_${arch}.tar.gz"
+        echo "qtpath=$(realpath "qt${{inputs.version}}")" >> $GITHUB_OUTPUT
+    - id: windows
+      shell: powershell
+      if: runner.os == 'Windows'
+      run: |
+        $os = $env:RUNNER_OS.ToLower()
+        $arch = ($env:PROCESSOR_ARCHITECTURE.ToLower() -replace '^amd64$', 'x64')
+        Start-BitsTransfer -Source `
+          "https://github.com/k61n/qt_static_builds/releases/download/${{inputs.version}}/qt${{inputs.version}}_static_${os}_${{inputs.compiler}}_${arch}.zip" `
+          -Destination .
+        7z x .\qt${{inputs.version}}_static_${os}_${{inputs.compiler}}_${arch}.zip `
+          -o"./qt${{inputs.version}}"
+        Remove-Item "qt${{inputs.version}}_static_${os}_${{inputs.compiler}}_${arch}.zip"
+        $path = (Resolve-Path "qt${{inputs.version}}").Path
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "qtpath=${path}"
