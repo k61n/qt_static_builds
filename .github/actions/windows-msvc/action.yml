@@ -1,21 +1,9 @@
-name: windows-msvc build
+name: Build on Windows with MSVC
 
 inputs:
-  vvv:
+  version:
     required: true
     description: "Qt long version"
-  vv:
-    required: true
-    description: "Qt short version"
-  arch:
-    required: true
-    description: "Architecture, e.g. arm64 or x64"
-  comp:
-    required: true
-    description: "Compiler, e.g. msvc2022"
-  vspath:
-    required: true
-    description: "Path to MSVC"
 outputs:
   fn:
     description: "Filename"
@@ -27,22 +15,37 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: env
+      shell: powershell
+      run: |
+        $v = '${{inputs.version}}'
+        $vv = ($v -split '\.')[0..1] -join '.'
+        $os = $env:RUNNER_OS.ToLower()
+        $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+        $vspath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+        Add-Content -Path $env:GITHUB_ENV -Value "v=${v}"
+        Add-Content -Path $env:GITHUB_ENV -Value "vv=${vv}"
+        Add-Content -Path $env:GITHUB_ENV -Value "os=${os}"
+        Add-Content -Path $env:GITHUB_ENV -Value ("arch=" + ($arch -replace '^amd64$', 'x64'))
+        Add-Content -Path $env:GITHUB_ENV -Value "vspath=${vspath}"
+        Remove-Item C:\mingw64 -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item "C:\Program Files\LLVM" -Recurse -Force -ErrorAction SilentlyContinue
     - name: download and unpack
       shell: powershell
       run: |
         Start-BitsTransfer -Source `
-          "https://download.qt.io/archive/qt/${{inputs.vv}}/${{inputs.vvv}}/single/qt-everywhere-src-${{inputs.vvv}}.zip" `
+          "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.zip" `
           -Destination .
-        7z x .\qt-everywhere-src-${{inputs.vvv}}.zip -o"./"
-        Rename-Item -Path "qt-everywhere-src-${{inputs.vvv}}" -NewName "qt"
+        7z x .\qt-everywhere-src-${{env.v}}.zip -o"./"
+        Rename-Item -Path "qt-everywhere-src-${{env.v}}" -NewName "qt"
+        mkdir qt\build
     - name: configure
       shell: cmd
       run: |
-        call "${{inputs.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
-        mkdir qt\build
+        call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
         cd qt\build
         ..\configure.bat ^
-          -prefix ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}" ^
+          -prefix ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}" ^
           -platform win32-msvc ^
           -release ^
           -static ^
@@ -50,17 +53,18 @@ runs:
           -confirm-license ^
           -nomake examples ^
           -nomake tests ^
+          -skip qtwebengine ^
           -no-openssl
     - name: build
       shell: cmd
       run: |
-        call "${{inputs.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
         cd qt\build
         cmake --build .
     - name: install
       shell: cmd
       run: |
-        call "${{inputs.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
         cd qt\build
         cmake --install .
     - name: pack
@@ -69,9 +73,9 @@ runs:
       run: |
         cd qt\build
         7z a -tzip `
-          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}.zip" `
-          ".\qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}\*"
+          ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip" `
+          ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}\*"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "fn=qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
-        Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "path=qt/build/qt${{inputs.vvv}}_static_windows_${{inputs.comp}}_${{inputs.arch}}.zip"
+          "fn=qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip"
+        $path = (Resolve-Path "qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip").Path
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "path=${path}"

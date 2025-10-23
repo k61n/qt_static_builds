@@ -20,13 +20,13 @@ jobs:
       - uses: ./.github/actions/unix
         id: build
         with:
-          version:  "6.10.0"
+          version: "6.10.0"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
 
-  windows-x64:
+  windows:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -34,21 +34,24 @@ jobs:
           - os: windows-2022
             comp: llvm1706
             archive: llvm-mingw-20231128-ucrt-x86_64.zip
-            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
+            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
           - os: windows-2022
             comp: mingw1310
             archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
             link: https://download.qt.io/development_releases/prebuilt/mingw_64/
+          - os: windows-11-arm
+            comp: llvm1706
+            archive: llvm-mingw-20231128-ucrt-aarch64.zip
+            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/windows-x64
+      - uses: ./.github/actions/windows
         id: build
         with:
-          vvv:      "6.10.0"
-          vv:       "6.10"
-          comp:     ${{matrix.comp}}
-          archive:  ${{matrix.archive}}
-          link:     ${{matrix.link}}
+          version: "6.10.0"
+          comp:    ${{matrix.comp}}
+          archive: ${{matrix.archive}}
+          link:    ${{matrix.link}}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
@@ -60,44 +63,13 @@ jobs:
       matrix:
         include:
           - os: windows-2022
-            arch: x64
-            comp: msvc2022
-            vspath: C:\Program Files\Microsoft Visual Studio\2022\Enterprise
+          - os: windows-11-arm
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/windows-msvc
         id: build
         with:
-          vvv:    "6.10.0"
-          vv:     "6.10"
-          arch:   ${{matrix.arch}}
-          comp:   ${{matrix.comp}}
-          vspath: ${{matrix.vspath}}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
-
-  windows-arm:
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-arm64
-            comp: msvc2022
-            flags: ""
-          - os: windows-arm64
-            comp: llvm1706
-            flags: -no-sql-odbc -- -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -G"Ninja"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/windows-arm64
-        id: build
-        with:
-          vvv:    "6.10.0"
-          vv:     "6.10"
-          comp:   ${{matrix.comp}}
-          flags:  ${{matrix.flags}}
+          version: "6.10.0"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
