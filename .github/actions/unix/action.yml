@@ -1,0 +1,59 @@
+name: unix build
+
+inputs:
+  version:
+    required: true
+    description: "Qt long version"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.build.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.build.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - name: Maximize Build Space
+      if: runner.os == 'Linux'
+      uses: jlumbroso/free-disk-space@v1.3.1
+      with:
+        tool-cache: false
+        large-packages: false
+    - name: Setup environment
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt update
+        sudo apt install wget xz-utils \
+          build-essential libgl1-mesa-dev cmake ninja-build python3-dev \
+          protobuf-compiler waylandpp-dev libwayland-dev libxkbcommon-dev
+    - id: build
+      shell: bash
+      run: |
+        v="${{inputs.version}}"
+        vv="${v%.*}"
+        os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
+        arch=$(uname -m)
+        cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+        wget -q "https://download.qt.io/archive/qt/${vv}/${v}/single/qt-everywhere-src-${v}.tar.xz"
+        tar -xf "qt-everywhere-src-${v}.tar.xz"
+        cd "qt-everywhere-src-${v}"
+        mkdir build && cd build
+        ../configure \
+          -prefix "./qt${v}_static_${os}_${arch}" \
+          -release \
+          -static \
+          -opensource \
+          -confirm-license \
+          -nomake examples \
+          -nomake tests \
+          -skip qtwebengine \
+          -- \
+          $([[ "$os" == "macos" ]] && echo -DCMAKE_OSX_ARCHITECTURES="${arch}")
+        cmake --build . --parallel ${cores}
+        cmake --install .
+        tar -czf "qt${v}_static_${os}_${arch}.tar.gz" "qt${v}_static_${os}_${arch}"
+        echo "fn=qt${v}_static_${os}_${arch}.tar.gz" >> $GITHUB_OUTPUT
+        echo "path=$(realpath "qt${v}_static_${os}_${arch}.tar.gz")" >> $GITHUB_OUTPUT

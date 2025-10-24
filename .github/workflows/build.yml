@@ -4,25 +4,23 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 jobs:
-  macos:
+  unix:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-14]
         include:
           - os: macos-14
-            arch: arm64
+          - os: macos-15-intel
+#          - os: ubuntu-22.04     # fails due to insufficient space
+#          - os: ubuntu-22.04-arm # fails due to insufficient space
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/macos
+      - uses: ./.github/actions/unix
         id: build
         with:
-          vvv:  "6.10.0"
-          vv:   "6.10"
-          arch: ${{matrix.arch}}
+          version:  "6.10.0"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
