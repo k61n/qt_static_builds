@@ -6,123 +6,123 @@ on:
   pull_request:
 
 jobs:
-  release_draft:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      version: ${{steps.release_draft.outputs.version}}
-      release_id: ${{steps.release_draft.outputs.release_id}}
-    steps:
-      - uses: actions/checkout@v4
-      - id: release_draft
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        run: |
-          version="$(tr -d '\r\n ' < version.txt)"
-          echo "version=${version}" >> $GITHUB_OUTPUT
-          tagexists="$(gh release list --limit 10 --json tagName \
-            --jq ".[] | select (.tagName==\"${version}\") | .tagName")"
-          if [ -z "${tagexists}" ]; then
-            gh release create "${version}" \
-              --target main \
-              --draft \
-              --title "qt_${version}" \
-              --notes "qt ${version}"
-          fi
-          release_id="$(gh release view "${version}" --json databaseId --jq .databaseId)"
-          echo "release_id=${release_id}" >> "$GITHUB_OUTPUT"
+#  release_draft:
+#    if: github.event_name != 'pull_request'
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: write
+#    outputs:
+#      version: ${{steps.release_draft.outputs.version}}
+#      release_id: ${{steps.release_draft.outputs.release_id}}
+#    steps:
+#      - uses: actions/checkout@v4
+#      - id: release_draft
+#        env:
+#          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+#        run: |
+#          version="$(tr -d '\r\n ' < version.txt)"
+#          echo "version=${version}" >> $GITHUB_OUTPUT
+#          tagexists="$(gh release list --limit 10 --json tagName \
+#            --jq ".[] | select (.tagName==\"${version}\") | .tagName")"
+#          if [ -z "${tagexists}" ]; then
+#            gh release create "${version}" \
+#              --target main \
+#              --draft \
+#              --title "qt_${version}" \
+#              --notes "qt ${version}"
+#          fi
+#          release_id="$(gh release view "${version}" --json databaseId --jq .databaseId)"
+#          echo "release_id=${release_id}" >> "$GITHUB_OUTPUT"
 
   unix:
-    needs: release_draft
+#    needs: release_draft
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
         include:
-          - os: macos-14
-          - os: macos-15-intel
-#          - os: ubuntu-22.04     # fails due to insufficient space
+#          - os: macos-14
+#          - os: macos-15-intel
+          - os: ubuntu-22.04     # fails due to insufficient space
 #          - os: ubuntu-22.04-arm # fails due to insufficient space
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/unix
         id: build
         with:
-          version: ${{needs.release_draft.outputs.version}}
+          version: 6.10.0
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
-      - uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{secrets.GITHUB_TOKEN}}
-          file:       ${{steps.build.outputs.path}}
-          asset_name: ${{steps.build.outputs.fn}}
-          release_id: ${{needs.release_draft.outputs.release_id}}
-          overwrite:  true
+#      - uses: svenstaro/upload-release-action@v2
+#        with:
+#          repo_token: ${{secrets.GITHUB_TOKEN}}
+#          file:       ${{steps.build.outputs.path}}
+#          asset_name: ${{steps.build.outputs.fn}}
+#          release_id: ${{needs.release_draft.outputs.release_id}}
+#          overwrite:  true
 
-  windows:
-    needs: release_draft
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-2022
-            comp: llvm1706
-            archive: llvm-mingw-20231128-ucrt-x86_64.zip
-            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
-          - os: windows-2022
-            comp: mingw1310
-            archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
-            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
-          - os: windows-11-arm
-            comp: llvm1706
-            archive: llvm-mingw-20231128-ucrt-aarch64.zip
-            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/windows
-        id: build
-        with:
-          version: ${{needs.release_draft.outputs.version}}
-          comp:    ${{matrix.comp}}
-          archive: ${{matrix.archive}}
-          link:    ${{matrix.link}}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
-      - uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{secrets.GITHUB_TOKEN}}
-          file:       ${{steps.build.outputs.path}}
-          asset_name: ${{steps.build.outputs.fn}}
-          release_id: ${{needs.release_draft.outputs.release_id}}
-          overwrite:  true
-
-  windows-msvc:
-    needs: release_draft
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        include:
-          - os: windows-2022
-          - os: windows-11-arm
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/windows-msvc
-        id: build
-        with:
-          version: ${{needs.release_draft.outputs.version}}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
-      - uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{secrets.GITHUB_TOKEN}}
-          file:       ${{steps.build.outputs.path}}
-          asset_name: ${{steps.build.outputs.fn}}
-          release_id: ${{needs.release_draft.outputs.release_id}}
-          overwrite:  true
+#  windows:
+#    needs: release_draft
+#    runs-on: ${{matrix.os}}
+#    strategy:
+#      matrix:
+#        include:
+#          - os: windows-2022
+#            comp: llvm1706
+#            archive: llvm-mingw-20231128-ucrt-x86_64.zip
+#            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
+#          - os: windows-2022
+#            comp: mingw1310
+#            archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+#            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
+#          - os: windows-11-arm
+#            comp: llvm1706
+#            archive: llvm-mingw-20231128-ucrt-aarch64.zip
+#            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: ./.github/actions/windows
+#        id: build
+#        with:
+#          version: ${{needs.release_draft.outputs.version}}
+#          comp:    ${{matrix.comp}}
+#          archive: ${{matrix.archive}}
+#          link:    ${{matrix.link}}
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: ${{steps.build.outputs.fn}}
+#          path: ${{steps.build.outputs.path}}
+#      - uses: svenstaro/upload-release-action@v2
+#        with:
+#          repo_token: ${{secrets.GITHUB_TOKEN}}
+#          file:       ${{steps.build.outputs.path}}
+#          asset_name: ${{steps.build.outputs.fn}}
+#          release_id: ${{needs.release_draft.outputs.release_id}}
+#          overwrite:  true
+#
+#  windows-msvc:
+#    needs: release_draft
+#    runs-on: ${{matrix.os}}
+#    strategy:
+#      matrix:
+#        include:
+#          - os: windows-2022
+#          - os: windows-11-arm
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: ./.github/actions/windows-msvc
+#        id: build
+#        with:
+#          version: ${{needs.release_draft.outputs.version}}
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: ${{steps.build.outputs.fn}}
+#          path: ${{steps.build.outputs.path}}
+#      - uses: svenstaro/upload-release-action@v2
+#        with:
+#          repo_token: ${{secrets.GITHUB_TOKEN}}
+#          file:       ${{steps.build.outputs.path}}
+#          asset_name: ${{steps.build.outputs.fn}}
+#          release_id: ${{needs.release_draft.outputs.release_id}}
+#          overwrite:  true
