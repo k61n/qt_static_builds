@@ -19,16 +19,16 @@ runs:
       if: runner.os == 'Linux'
       uses: jlumbroso/free-disk-space@v1.3.1
       with:
-        tool-cache: false
-        large-packages: false
+        tool-cache: true
     - name: Setup environment
       if: runner.os == 'Linux'
       shell: bash
       run: |
         sudo apt update
-        sudo apt install wget xz-utils \
+        sudo apt install -y wget xz-utils \
           build-essential libgl1-mesa-dev cmake ninja-build python3-dev \
-          protobuf-compiler waylandpp-dev libwayland-dev libxkbcommon-dev
+          protobuf-compiler waylandpp-dev libwayland-dev libxkbcommon-dev \
+          libhunspell-dev python3-hunspell
     - id: build
       shell: bash
       run: |
@@ -39,10 +39,17 @@ runs:
         cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
         wget -q "https://download.qt.io/archive/qt/${vv}/${v}/single/qt-everywhere-src-${v}.tar.xz"
         tar -xf "qt-everywhere-src-${v}.tar.xz"
-        cd "qt-everywhere-src-${v}"
-        mkdir build && cd build
-        ../configure \
-          -prefix "./qt${v}_static_${os}_${arch}" \
+        if [[ "$os" == "linux" ]]; then
+          sudo rm -rf /mnt/*
+          sudo mkdir -p /mnt/build
+          sudo chown ${USER}:${USER} /mnt/build
+          cd /mnt/build
+        else
+          cd qt-everywhere-src-${v}
+          mkdir build && cd build
+        fi
+        ${{github.workspace}}/qt-everywhere-src-${v}/configure \
+          -prefix ${{github.workspace}}/"qt${v}_static_${os}_${arch}" \
           -release \
           -static \
           -opensource \
@@ -50,10 +57,13 @@ runs:
           -nomake examples \
           -nomake tests \
           -skip qtwebengine \
+          -skip qtwebview \
+          $([[ "$os" == "linux" ]] && echo -skip qt3d -skip qt5compat -skip qtcharts -skip qtdatavis3d -skip qtdoc) \
           -- \
           $([[ "$os" == "macos" ]] && echo -DCMAKE_OSX_ARCHITECTURES="${arch}")
         cmake --build . --parallel ${cores}
         cmake --install .
+        cd ${{github.workspace}}
         tar -czf "qt${v}_static_${os}_${arch}.tar.gz" "qt${v}_static_${os}_${arch}"
         echo "fn=qt${v}_static_${os}_${arch}.tar.gz" >> $GITHUB_OUTPUT
         echo "path=$(realpath "qt${v}_static_${os}_${arch}.tar.gz")" >> $GITHUB_OUTPUT
