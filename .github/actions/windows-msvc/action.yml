@@ -1,0 +1,80 @@
+name: Build on Windows with MSVC
+
+inputs:
+  version:
+    required: true
+    description: "Qt long version"
+  arch:
+    required: true
+    description: "Architecture x86 or x64"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.pack.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.pack.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - name: env
+      shell: powershell
+      run: |
+        $v = '${{inputs.version}}'
+        $vv = ($v -split '\.')[0..1] -join '.'
+        $vspath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
+        Add-Content -Path $env:GITHUB_ENV -Value "v=${v}"
+        Add-Content -Path $env:GITHUB_ENV -Value "vv=${vv}"
+        Add-Content -Path $env:GITHUB_ENV -Value "vspath=${vspath}"
+    - name: download and unpack
+      shell: powershell
+      run: |
+        Remove-Item * -Recurse -Force
+        Start-BitsTransfer -Source `
+          "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-opensource-src-${{env.v}}.zip" `
+          -Destination .
+        7z.exe x .\qt-everywhere-opensource-src-${{env.v}}.zip -o"./"
+        Rename-Item -Path "qt-everywhere-src-${{env.v}}" -NewName "qt"
+        mkdir qt\build
+    - name: configure
+      shell: cmd
+      run: |
+        call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        cd qt\build
+        ..\configure.bat ^
+          -prefix ".\qt${{env.v}}_static_windows_msvc2019_${{inputs.arch}}" ^
+          -release ^
+          -static ^
+          -opensource ^
+          -confirm-license ^
+          -platform win32-msvc ^
+          -opengl desktop ^
+          -nomake examples ^
+          -nomake tests ^
+          -skip qtwebengine ^
+          -mp
+    - name: build
+      shell: cmd
+      run: |
+        call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        set CL=/MP
+        cd qt\build
+        nmake
+    - name: install
+      shell: cmd
+      run: |
+        call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{inputs.arch}}
+        cd qt\build
+        nmake install
+    - id: pack
+      shell: powershell
+      run: |
+        cd qt\build
+        7z a -tzip `
+          ".\qt${{env.v}}_static_windows_msvc2019_${{inputs.arch}}.zip" `
+          ".\qt${{env.v}}_static_windows_msvc2019_${{inputs.arch}}\*"
+        $fn = "qt${{env.v}}_static_windows_msvc2019_${{inputs.arch}}.zip"
+        $path = (Resolve-Path ".\qt${{env.v}}_static_windows_msvc2019_${{inputs.arch}}.zip").Path
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "fn=${fn}"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "path=${path}"

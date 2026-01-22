@@ -1,0 +1,86 @@
+name: unix build
+
+inputs:
+  version:
+    required: true
+    description: "Qt long version"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.build.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.build.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - name: deps
+      shell: bash
+      run: |
+        brew install boost freetype gettext glib jpeg-turbo libpng libtiff \
+          make md4c pcre2 pkgconf sqlite webp zstd
+    - name: env
+      shell: bash
+      run: |
+        v='${{inputs.version}}'
+        vv="${v%.*}"
+        arch=$(uname -m)
+        echo "v=$v" >> $GITHUB_ENV
+        echo "vv=$vv" >> $GITHUB_ENV
+        echo "arch=$arch" >> $GITHUB_ENV
+    - name: download and unpack
+      shell: bash
+      run: |
+        wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-opensource-src-${{env.v}}.tar.xz"
+        tar -xf "qt-everywhere-opensource-src-${{env.v}}.tar.xz"
+        mv "qt-everywhere-src-${{env.v}}" qt
+        mkdir qt/build
+    - name: patch
+      shell: bash
+      run: |
+        prefix=$(brew --prefix)
+        rm -rf qt/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost
+        ln -s $prefix/opt/boost/include/boost \
+          qt/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include
+        cp patches/qt5/35d566724c48180c9a372c2ed50a253871a51574.diff \
+          qt/qtlocation/src/3rdparty/mapbox-gl-native
+        cp patches/qt5/5a07e1967dcc925d9def47accadae991436b9686.diff \
+          qt/qtlocation/src/3rdparty/mapbox-gl-native
+        cp patches/qt5/936486.diff qt/qtlocation
+        cp patches/qt5/CVE-2025-23050-qtconnectivity-5.15.diff qt/qtconnectivity
+        cp patches/qt5/opengl.diff qt/qtbase
+        cp patches/qt5/CVE-2025-30348-qtbase-5.15.diff qt/qtbase
+        cp patches/qt5/CVE-2025-4211-qtbase-5.15.diff qt/qtbase
+        cp patches/qt5/CVE-2025-5455-qtbase-5.15.patch qt/qtbase
+        cd ${{github.workspace}}/qt/qtlocation/src/3rdparty/mapbox-gl-native
+        patch < 35d566724c48180c9a372c2ed50a253871a51574.diff
+        patch < 5a07e1967dcc925d9def47accadae991436b9686.diff
+        cd ${{github.workspace}}/qt/qtlocation
+        patch < 936486.diff
+        cd ${{github.workspace}}/qt/qtconnectivity
+        patch < CVE-2025-23050-qtconnectivity-5.15.diff
+        cd ${{github.workspace}}/qt/qtbase
+        patch < opengl.diff
+        patch < CVE-2025-30348-qtbase-5.15.diff
+        patch < CVE-2025-4211-qtbase-5.15.diff
+        patch < CVE-2025-5455-qtbase-5.15.patch
+    - id: build
+      shell: bash
+      run: |
+        cd qt/build
+        ../configure \
+          -prefix "./qt${{env.v}}_static_macos_${{env.arch}}" \
+          -release \
+          -static \
+          -opensource \
+          -confirm-license \
+          -nomake examples \
+          -nomake tests \
+          -skip qtwebengine \
+          QMAKE_APPLE_DEVICE_ARCHS=${{env.arch}}
+        gmake -j$(sysctl -n hw.ncpu)
+        gmake install
+        tar -czf "qt${{env.v}}_static_macos_${{env.arch}}.tar.gz" "qt${{env.v}}_static_macos_${{env.arch}}"
+        echo "fn=qt${{env.v}}_static_macos_${{env.arch}}.tar.gz" >> $GITHUB_OUTPUT
+        echo "path=$(realpath "qt${{env.v}}_static_macos_${{env.arch}}.tar.gz")" >> $GITHUB_OUTPUT

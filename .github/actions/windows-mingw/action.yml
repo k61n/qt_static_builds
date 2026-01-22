@@ -1,0 +1,62 @@
+name: Build on Windows with custom compilers
+
+inputs:
+  version:
+    required: true
+    description: "Qt long version"
+  arch:
+    required: true
+    description: "Architecture 32 or 64"
+outputs:
+  fn:
+    description: "Filename"
+    value: ${{steps.build.outputs.fn}}
+  path:
+    description: "Path"
+    value: ${{steps.build.outputs.path}}
+
+runs:
+  using: composite
+  steps:
+    - name: env
+      shell: powershell
+      run: |
+        $v = '${{inputs.version}}'
+        $vv = ($v -split '\.')[0..1] -join '.'
+        Add-Content -Path $env:GITHUB_ENV -Value "v=${v}"
+        Add-Content -Path $env:GITHUB_ENV -Value "vv=${vv}"
+    - name: download and unpack
+      shell: powershell
+      run: |
+        Remove-Item * -Recurse -Force
+        Start-BitsTransfer -Source `
+          "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-opensource-src-${{env.v}}.zip" `
+          -Destination .
+        7z.exe x .\qt-everywhere-opensource-src-${{env.v}}.zip -o"./"
+        Rename-Item -Path "qt-everywhere-src-${{env.v}}" -NewName "qt"
+        mkdir qt\build
+    - id: build
+      shell: powershell
+      run: |
+        $env:Path = "C:\Qt\Tools\mingw810_${{inputs.arch}}\bin;" + $env:Path
+        cd qt\build
+        ..\configure.bat `
+          -prefix ".\qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}" `
+          -release `
+          -static `
+          -opensource `
+          -confirm-license `
+          -platform win32-g++ `
+          -opengl desktop `
+          -nomake examples `
+          -nomake tests `
+          -skip qtwebengine
+        mingw32-make.exe -j $env:NUMBER_OF_PROCESSORS
+        mingw32-make.exe install -j $env:NUMBER_OF_PROCESSORS
+        7z.exe a -tzip `
+          ".\qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}.zip" `
+          ".\qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}\*"
+        $fn = "qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}.zip"
+        $path = (Resolve-Path ".\qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}.zip").Path
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "fn=${fn}"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "path=${path}"
