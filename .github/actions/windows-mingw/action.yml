@@ -25,13 +25,22 @@ runs:
         $vv = ($v -split '\.')[0..1] -join '.'
         Add-Content -Path $env:GITHUB_ENV -Value "v=${v}"
         Add-Content -Path $env:GITHUB_ENV -Value "vv=${vv}"
-    - name: download and unpack
+    - name: Cache Qt source archive
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        path: qt-everywhere-opensource-src-${{env.v}}.zip
+        key: qt-everywhere-opensource-src-${{env.v}}.zip
+    - name: download
+      if: steps.cache-qt.outputs.cache-hit != 'true'
       shell: powershell
       run: |
-        Remove-Item * -Recurse -Force
         Start-BitsTransfer -Source `
           "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-opensource-src-${{env.v}}.zip" `
           -Destination .
+    - name: unpack
+      shell: powershell
+      run: |
         7z.exe x .\qt-everywhere-opensource-src-${{env.v}}.zip -o"./"
         Rename-Item -Path "qt-everywhere-src-${{env.v}}" -NewName "qt"
         mkdir qt\build

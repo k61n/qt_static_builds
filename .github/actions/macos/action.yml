@@ -29,10 +29,20 @@ runs:
         echo "v=$v" >> $GITHUB_ENV
         echo "vv=$vv" >> $GITHUB_ENV
         echo "arch=$arch" >> $GITHUB_ENV
-    - name: download and unpack
+    - name: Cache Qt source archive
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        path: qt-everywhere-opensource-src-${{env.v}}.tar.xz
+        key: qt-everywhere-opensource-src-${{env.v}}.tar.xz
+    - name: download
+      if: steps.cache-qt.outputs.cache-hit != 'true'
       shell: bash
       run: |
         wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-opensource-src-${{env.v}}.tar.xz"
+    - name: unpack
+      shell: bash
+      run: |
         tar -xf "qt-everywhere-opensource-src-${{env.v}}.tar.xz"
         mv "qt-everywhere-src-${{env.v}}" qt
         mkdir qt/build

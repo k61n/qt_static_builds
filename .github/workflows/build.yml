@@ -71,6 +71,10 @@ jobs:
           - os: win2019
             arch: 64
     steps:
+      - name: cleanup
+        shell: powershell
+        run: |
+          Remove-Item * -Recurse -Force
       - uses: actions/checkout@v4
       - uses: ./.github/actions/windows-mingw
         id: build
@@ -100,6 +104,10 @@ jobs:
           - os: win2019
             arch: x64
     steps:
+      - name: cleanup
+        shell: powershell
+        run: |
+          Remove-Item * -Recurse -Force
       - uses: actions/checkout@v4
       - uses: ./.github/actions/windows-msvc
         id: build
