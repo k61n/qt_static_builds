@@ -48,6 +48,7 @@ runs:
       with:
         path: qt-everywhere-src-${{env.v}}.tar.xz
         key: qt-everywhere-src-${{env.v}}.tar.xz
+        enableCrossOsArchive: true
     - name: unpack
       shell: bash
       run: |

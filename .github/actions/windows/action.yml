@@ -38,6 +38,7 @@ runs:
       with:
         path: ${{inputs.archive}}
         key: ${{inputs.archive}}
+        enableCrossOsArchive: true
     - name: setup compiler
       shell: powershell
       run: |
@@ -54,6 +55,7 @@ runs:
       with:
         path: qt-everywhere-src-${{env.v}}.zip
         key: qt-everywhere-src-${{env.v}}.zip
+        enableCrossOsArchive: true
     - name: unpack
       shell: powershell
       run: |

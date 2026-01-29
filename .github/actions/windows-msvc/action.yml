@@ -36,6 +36,7 @@ runs:
       with:
         path: qt-everywhere-src-${{env.v}}.zip
         key: qt-everywhere-src-${{env.v}}.zip
+        enableCrossOsArchive: true
     - name: unpack
       shell: powershell
       run: |
