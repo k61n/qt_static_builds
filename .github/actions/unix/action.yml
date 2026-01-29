@@ -21,7 +21,7 @@ runs:
       with:
         tool-cache: false
         large-packages: false
-    - name: Setup environment
+    - name: Setup dependencies
       if: runner.os == 'Linux'
       shell: bash
       run: |
@@ -29,7 +29,7 @@ runs:
         sudo apt install wget xz-utils \
           build-essential libgl1-mesa-dev cmake ninja-build python3-dev \
           protobuf-compiler waylandpp-dev libwayland-dev libxkbcommon-dev
-    - id: build
+    - name: Setup environment
       shell: bash
       run: |
         v="${{inputs.version}}"
@@ -37,12 +37,34 @@ runs:
         os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
         arch=$(uname -m)
         cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-        wget -q "https://download.qt.io/archive/qt/${vv}/${v}/single/qt-everywhere-src-${v}.tar.xz"
-        tar -xf "qt-everywhere-src-${v}.tar.xz"
-        cd "qt-everywhere-src-${v}"
-        mkdir build && cd build
+        echo "v=$v" >> $GITHUB_ENV
+        echo "vv=$vv" >> $GITHUB_ENV
+        echo "os=$os" >> $GITHUB_ENV
+        echo "arch=$arch" >> $GITHUB_ENV
+        echo "cores=$cores" >> $GITHUB_ENV
+    - name: Cache Qt source archive
+      id: cache-qt
+      uses: actions/cache@v5
+      with:
+        path: qt-everywhere-src-${{env.v}}.tar.xz
+        key: qt-everywhere-src-${{env.v}}.tar.xz
+    - name: download
+      if: steps.cache-qt.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.tar.xz"
+    - name: unpack
+      shell: bash
+      run: |
+        tar -xf "qt-everywhere-src-${{env.v}}.tar.xz"
+        mv "qt-everywhere-src-${{env.v}}" qt
+        mkdir qt/build
+    - id: build
+      shell: bash
+      run: |
+        cd qt/build
         ../configure \
-          -prefix "./qt${v}_static_${os}_${arch}" \
+          -prefix "./qt${{env.v}}_static_${{env.os}}_${{env.arch}}" \
           -release \
           -static \
           -opensource \
@@ -51,9 +73,10 @@ runs:
           -nomake tests \
           -skip qtwebengine \
           -- \
-          $([[ "$os" == "macos" ]] && echo -DCMAKE_OSX_ARCHITECTURES="${arch}")
-        cmake --build . --parallel ${cores}
+          $([[ "$os" == "macos" ]] && echo -DCMAKE_OSX_ARCHITECTURES="${{env.arch}}")
+        cmake --build . --parallel ${{env.cores}}
         cmake --install .
-        tar -czf "qt${v}_static_${os}_${arch}.tar.gz" "qt${v}_static_${os}_${arch}"
-        echo "fn=qt${v}_static_${os}_${arch}.tar.gz" >> $GITHUB_OUTPUT
-        echo "path=$(realpath "qt${v}_static_${os}_${arch}.tar.gz")" >> $GITHUB_OUTPUT
+        tar -czf "qt${{env.v}}_static_${{env.os}}_${{env.arch}}.tar.gz" \
+          "qt${{env.v}}_static_${{env.os}}_${{env.arch}}"
+        echo "fn=qt${{env.v}}_static_${{env.os}}_${{env.arch}}.tar.gz" >> $GITHUB_OUTPUT
+        echo "path=$(realpath "qt${{env.v}}_static_${{env.os}}_${{env.arch}}.tar.gz")" >> $GITHUB_OUTPUT

@@ -30,12 +30,22 @@ runs:
         Add-Content -Path $env:GITHUB_ENV -Value "vspath=${vspath}"
         Remove-Item C:\mingw64 -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item "C:\Program Files\LLVM" -Recurse -Force -ErrorAction SilentlyContinue
-    - name: download and unpack
+    - name: Cache Qt source archive
+      id: cache-qt
+      uses: actions/cache@v5
+      with:
+        path: qt-everywhere-src-${{env.v}}.zip
+        key: qt-everywhere-src-${{env.v}}.zip
+    - name: download
+      if: steps.cache-qt.outputs.cache-hit != 'true'
       shell: powershell
       run: |
         Start-BitsTransfer -Source `
           "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.zip" `
           -Destination .
+    - name: unpack
+      shell: powershell
+      run: |
         7z x .\qt-everywhere-src-${{env.v}}.zip -o"./"
         Rename-Item -Path "qt-everywhere-src-${{env.v}}" -NewName "qt"
         mkdir qt\build
@@ -75,7 +85,7 @@ runs:
         7z a -tzip `
           ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip" `
           ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}\*"
-        Add-Content -Path $env:GITHUB_OUTPUT -Value `
-          "fn=qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip"
+        $fn = "qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip"
         $path = (Resolve-Path "qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip").Path
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "fn=${fn}"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "path=${path}"
