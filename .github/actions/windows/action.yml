@@ -52,13 +52,6 @@ runs:
       with:
         path: qt-everywhere-src-${{env.v}}.zip
         key: qt-everywhere-src-${{env.v}}.zip
-    - name: download
-      if: steps.cache-qt.outputs.cache-hit != 'true'
-      shell: powershell
-      run: |
-        Start-BitsTransfer -Source `
-          "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.zip" `
-          -Destination .
     - name: unpack
       shell: powershell
       run: |

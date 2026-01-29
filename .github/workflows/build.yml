@@ -34,8 +34,49 @@ jobs:
           release_id="$(gh release view "${version}" --json databaseId --jq .databaseId)"
           echo "release_id=${release_id}" >> "$GITHUB_OUTPUT"
 
-  unix:
+  downloads:
     needs: release_draft
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{steps.env.outputs.version}}
+    steps:
+      - id: env
+        shell: bash
+        run: |
+          v=${{needs.release_draft.outputs.version}}
+          vv="${v%.*}"
+          echo "v=$v" >> $GITHUB_ENV
+          echo "version=${v}" >> $GITHUB_OUTPUT
+          echo "vv=$vv" >> $GITHUB_ENV
+      - name: Cache Qt source tar.xz
+        id: cache-qt-tarxz
+        uses: actions/cache@v5
+        with:
+          path: qt-everywhere-src-${{env.v}}.tar.xz
+          key: qt-everywhere-src-${{env.v}}.tar.xz
+          enableCrossOsArchive: true
+      - name: download tar.xz
+        if: steps.cache-qt-tarxz.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.tar.xz"
+      - name: Cache Qt source zip
+        id: cache-qt-zip
+        uses: actions/cache@v5
+        with:
+          path: qt-everywhere-src-${{env.v}}.zip
+          key: qt-everywhere-src-${{env.v}}.zip
+          enableCrossOsArchive: true
+      - name: download zip
+        if: steps.cache-qt-zip.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.zip"
+
+  unix:
+    needs:
+      - release_draft
+      - downloads
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -63,7 +104,9 @@ jobs:
           overwrite:  true
 
   windows:
-    needs: release_draft
+    needs:
+      - release_draft
+      - downloads
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -102,7 +145,9 @@ jobs:
           overwrite:  true
 
   windows-msvc:
-    needs: release_draft
+    needs:
+      - release_draft
+      - downloads
     runs-on: ${{matrix.os}}
     strategy:
       matrix:

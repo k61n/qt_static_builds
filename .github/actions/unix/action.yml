@@ -48,11 +48,6 @@ runs:
       with:
         path: qt-everywhere-src-${{env.v}}.tar.xz
         key: qt-everywhere-src-${{env.v}}.tar.xz
-    - name: download
-      if: steps.cache-qt.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.tar.xz"
     - name: unpack
       shell: bash
       run: |
