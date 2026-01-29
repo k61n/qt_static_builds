@@ -72,6 +72,42 @@ jobs:
         shell: bash
         run: |
           wget -q "https://download.qt.io/archive/qt/${{env.vv}}/${{env.v}}/single/qt-everywhere-src-${{env.v}}.zip"
+      - name: llvm1706-x86_64
+        id: cache-llvm-x86_64
+        uses: actions/cache@v5
+        with:
+          path: llvm-mingw-20231128-ucrt-x86_64.zip
+          key: llvm-mingw-20231128-ucrt-x86_64.zip
+          enableCrossOsArchive: true
+      - name: download llvm1706-x86_64
+        if: steps.cache-llvm-x86_64.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          wget -q "https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-x86_64.zip"
+      - name: mingw-x86_64
+        id: cache-mingw-x86_64
+        uses: actions/cache@v5
+        with:
+          path: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+          key: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+          enableCrossOsArchive: true
+      - name: download mingw-x86_64
+        if: steps.cache-mingw-x86_64.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          wget -q "https://download.qt.io/development_releases/prebuilt/mingw_64/MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z"
+      - name: llvm1706-arm64
+        id: cache-llvm-arm64
+        uses: actions/cache@v5
+        with:
+          path: llvm-mingw-20231128-ucrt-aarch64.zip
+          key: llvm-mingw-20231128-ucrt-aarch64.zip
+          enableCrossOsArchive: true
+      - name: download llvm1706-arm64
+        if: steps.cache-llvm-arm64.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          wget -q "https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-aarch64.zip"
 
   unix:
     needs:
@@ -114,15 +150,12 @@ jobs:
           - os: windows-2022
             comp: llvm1706
             archive: llvm-mingw-20231128-ucrt-x86_64.zip
-            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
           - os: windows-2022
             comp: mingw1310
             archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
-            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
           - os: windows-11-arm
             comp: llvm1706
             archive: llvm-mingw-20231128-ucrt-aarch64.zip
-            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/windows

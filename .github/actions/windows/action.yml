@@ -10,9 +10,6 @@ inputs:
   archive:
     required: true
     description: "Filename of the compiler archive"
-  link:
-    required: true
-    description: "Link to a folder where the compiler archive is"
 outputs:
   fn:
     description: "Filename"
@@ -35,12 +32,17 @@ runs:
         Add-Content -Path $env:GITHUB_ENV -Value "vv=${vv}"
         Add-Content -Path $env:GITHUB_ENV -Value "os=${os}"
         Add-Content -Path $env:GITHUB_ENV -Value ("arch=" + ($arch -replace '^amd64$', 'x64'))
+    - name: Cache compiler
+      id: cache-comp
+      uses: actions/cache@v5
+      with:
+        path: ${{inputs.archive}}
+        key: ${{inputs.archive}}
     - name: setup compiler
       shell: powershell
       run: |
         Remove-Item C:\mingw64 -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item "C:\Program Files\LLVM" -Recurse -Force -ErrorAction SilentlyContinue
-        Start-BitsTransfer -Source ${{inputs.link}}${{inputs.archive}} -Destination .
         $folder = (7z l .\${{inputs.archive}} -ba `
           | Select-String '(?<=\s)([^\s\\]+)(?=\\)' `
           | Select-Object -First 1).Matches[0].Groups[1].Value
