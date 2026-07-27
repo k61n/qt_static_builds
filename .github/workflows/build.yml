@@ -40,7 +40,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15
           - os: macos-15-intel
 #          - os: ubuntu-22.04     # fails due to insufficient space
 #          - os: ubuntu-22.04-arm # fails due to insufficient space
