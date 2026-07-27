@@ -1,0 +1,44 @@
+name: Pr
+
+on: pull_request
+
+jobs:
+  release_id:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{steps.release_draft.outputs.version}}
+    steps:
+      - uses: actions/checkout@v4
+      - id: release_draft
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          version="$(tr -d '\r\n ' < version.txt)"
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+  unix:
+    needs: release_id
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+          - os: macos-15-intel
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Checkout static Qt release
+        uses: ./.github/actions/checkout
+        id: qtsetup
+        with:
+          version: ${{needs.release_id.outputs.version}}
+      - name: Build test
+        shell: bash
+        run: |
+          cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+          cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{steps.qtsetup.outputs.qtpath}}
+          cmake --build test/build --parallel ${cores}
+      - name: Run test
+        shell: bash
+        run: ./test/build/qt_static_test
