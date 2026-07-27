@@ -63,6 +63,7 @@ runs:
           -prefix ".\qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}" `
           -release `
           -static `
+          -static-runtime `
           -opensource `
           -confirm-license `
           -feature-relocatable `
