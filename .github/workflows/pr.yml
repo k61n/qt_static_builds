@@ -95,3 +95,41 @@ jobs:
       - name: Run test
         shell: powershell
         run: ./test/build/qt_static_test.exe
+
+  windows-msvc:
+    needs: release_id
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+          - os: windows-11-arm
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Checkout static Qt release
+        id: qtsetup
+        uses: ./.github/actions/checkout
+        with:
+          version: ${{needs.release_id.outputs.version}}
+          compiler: msvc2022
+      - name: Setup environment
+        shell: powershell
+        run: |
+          $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+          $vspath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          Add-Content -Path $env:GITHUB_ENV -Value ("arch=" + ($arch -replace '^amd64$', 'x64'))
+          Add-Content -Path $env:GITHUB_ENV -Value "vspath=${vspath}"
+      - name: Build test
+        shell: cmd
+        run: |
+          call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
+          cmake ^
+            -S test ^
+            -B test/build ^
+            -DCMAKE_PREFIX_PATH=${{steps.qtsetup.outputs.qtpath}}
+          cmake --build test/build --config Release
+      - name: Run test
+        shell: powershell
+        run: ./test/build/Release/qt_static_test.exe
