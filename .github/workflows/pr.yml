@@ -42,3 +42,56 @@ jobs:
       - name: Run test
         shell: bash
         run: ./test/build/qt_static_test
+
+  windows:
+    needs: release_id
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            comp: llvm1706
+            archive: llvm-mingw-20231128-ucrt-x86_64.zip
+            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
+          - os: windows-2022
+            comp: mingw1310
+            archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
+          - os: windows-11-arm
+            comp: llvm1706
+            archive: llvm-mingw-20231128-ucrt-aarch64.zip
+            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup compiler
+        shell: powershell
+        run: |
+          Remove-Item C:\mingw64 -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item "C:\Program Files\LLVM" -Recurse -Force -ErrorAction SilentlyContinue
+          Start-BitsTransfer -Source ${{matrix.link}}${{matrix.archive}} -Destination .
+          $folder = (7z l .\${{matrix.archive}} -ba `
+            | Select-String '(?<=\s)([^\s\\]+)(?=\\)' `
+            | Select-Object -First 1).Matches[0].Groups[1].Value
+          7z x .\${{matrix.archive}} -o"C:\"
+          Rename-Item -Path "C:\$folder" -NewName "mingw64" -ErrorAction SilentlyContinue
+      - name: Checkout static Qt release
+        id: qtsetup
+        uses: ./.github/actions/checkout
+        with:
+          version: ${{needs.release_id.outputs.version}}
+          compiler: ${{matrix.comp}}
+      - name: Build test
+        shell: powershell
+        run: |
+          cmake `
+            -S test `
+            -B test/build `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH=${{steps.qtsetup.outputs.qtpath}} `
+            -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
+          cmake --build test/build --parallel ${env:NUMBER_OF_PROCESSORS}
+      - name: Run test
+        shell: powershell
+        run: ./test/build/qt_static_test.exe
