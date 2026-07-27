@@ -65,6 +65,7 @@ runs:
           -static `
           -opensource `
           -confirm-license `
+          -feature-relocatable `
           -nomake examples `
           -nomake tests `
           -skip qtwebengine `
