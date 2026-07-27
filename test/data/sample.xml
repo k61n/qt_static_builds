@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library name="test">
+    <book id="1" lang="en">
+        <title>Static Linking</title>
+        <author>Anonymous</author>
+    </book>
+    <book id="2" lang="de">
+        <title>Bücher über Qt</title>
+        <author>Unbekannt</author>
+    </book>
+</library>
