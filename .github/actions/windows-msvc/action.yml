@@ -49,6 +49,7 @@ runs:
           -platform win32-msvc ^
           -release ^
           -static ^
+          -static-runtime ^
           -opensource ^
           -confirm-license ^
           -feature-relocatable ^
