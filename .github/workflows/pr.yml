@@ -30,17 +30,23 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Checkout static Qt release
-        uses: ./.github/actions/checkout
-        id: qtsetup
+      - uses: ./.github/actions/unix
+        id: build
         with:
           version: ${{needs.release_id.outputs.version}}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
       - name: Build test
         shell: bash
         run: |
+          fn="${{steps.build.outputs.fn}}"
+          qtdir="${fn%.tar.gz}"
           cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-          cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{steps.qtsetup.outputs.qtpath}}
+          cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/$qtdir"
           cmake --build test/build --parallel ${cores}
 
       - name: Run test
@@ -82,21 +88,29 @@ jobs:
           7z x .\${{matrix.archive}} -o"C:\"
           Rename-Item -Path "C:\$folder" -NewName "mingw64" -ErrorAction SilentlyContinue
 
-      - name: Checkout static Qt release
-        id: qtsetup
-        uses: ./.github/actions/checkout
+      - uses: ./.github/actions/windows
+        id: build
         with:
           version: ${{needs.release_id.outputs.version}}
-          compiler: ${{matrix.comp}}
+          comp:    ${{matrix.comp}}
+          archive: ${{matrix.archive}}
+          link:    ${{matrix.link}}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
       - name: Build test
         shell: powershell
         run: |
+          $fn = "${{steps.build.outputs.fn}}"
+          $qtdir = $fn -replace '\.zip$', ''
           cmake `
             -S test `
             -B test/build `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_PREFIX_PATH=${{steps.qtsetup.outputs.qtpath}} `
+            -DCMAKE_PREFIX_PATH="${{github.workspace}}\$qtdir" `
             -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
           cmake --build test/build --parallel ${env:NUMBER_OF_PROCESSORS}
 
@@ -117,29 +131,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Checkout static Qt release
-        id: qtsetup
-        uses: ./.github/actions/checkout
+      - uses: ./.github/actions/windows-msvc
+        id: build
         with:
           version: ${{needs.release_id.outputs.version}}
-          compiler: msvc2022
 
-      - name: Setup environment
-        shell: powershell
-        run: |
-          $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
-          $vspath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
-          Add-Content -Path $env:GITHUB_ENV -Value ("arch=" + ($arch -replace '^amd64$', 'x64'))
-          Add-Content -Path $env:GITHUB_ENV -Value "vspath=${vspath}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{steps.build.outputs.fn}}
+          path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
       - name: Build test
         shell: cmd
         run: |
           call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
+          set "fn=${{steps.build.outputs.fn}}"
+          set "qtdir=%fn:.zip=%"
           cmake ^
             -S test ^
             -B test/build ^
-            -DCMAKE_PREFIX_PATH=${{steps.qtsetup.outputs.qtpath}}
+            -DCMAKE_PREFIX_PATH="${{github.workspace}}\%qtdir%"
           cmake --build test/build --config Release
 
       - name: Run test
