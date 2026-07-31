@@ -8,9 +8,6 @@ outputs:
   fn:
     description: "Filename"
     value: ${{steps.pack.outputs.fn}}
-  path:
-    description: "Path"
-    value: ${{steps.pack.outputs.path}}
 
 runs:
   using: composite
@@ -45,7 +42,7 @@ runs:
         call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
         cd qt\build
         ..\configure.bat ^
-          -prefix ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}" ^
+          -prefix "${{github.workspace}}\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}" ^
           -platform win32-msvc ^
           -release ^
           -static ^
@@ -73,11 +70,8 @@ runs:
       id: pack
       shell: powershell
       run: |
-        cd qt\build
         7z a -tzip `
           ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip" `
           ".\qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}\*"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
           "fn=qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip"
-        $path = (Resolve-Path "qt${{env.v}}_static_${{env.os}}_msvc2022_${{env.arch}}.zip").Path
-        Add-Content -Path $env:GITHUB_OUTPUT -Value "path=${path}"

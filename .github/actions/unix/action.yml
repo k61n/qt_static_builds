@@ -8,9 +8,6 @@ outputs:
   fn:
     description: "Filename"
     value: ${{steps.build.outputs.fn}}
-  path:
-    description: "Path"
-    value: ${{steps.build.outputs.path}}
 
 runs:
   using: composite
@@ -42,7 +39,7 @@ runs:
         cd "qt-everywhere-src-${v}"
         mkdir build && cd build
         ../configure \
-          -prefix "./qt${v}_static_${os}_${arch}" \
+          -prefix "${{github.workspace}}/qt${v}_static_${os}_${arch}" \
           -release \
           -static \
           -opensource \
@@ -54,6 +51,6 @@ runs:
           $([[ "$os" == "macos" ]] && echo -DCMAKE_OSX_ARCHITECTURES="${arch}")
         cmake --build . --parallel ${cores}
         cmake --install .
+        cd "${{github.workspace}}"
         tar -czf "qt${v}_static_${os}_${arch}.tar.gz" "qt${v}_static_${os}_${arch}"
         echo "fn=qt${v}_static_${os}_${arch}.tar.gz" >> $GITHUB_OUTPUT
-        echo "path=$(realpath "qt${v}_static_${os}_${arch}.tar.gz")" >> $GITHUB_OUTPUT
