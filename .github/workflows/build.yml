@@ -15,6 +15,7 @@ jobs:
       release_id: ${{steps.release_draft.outputs.release_id}}
     steps:
       - uses: actions/checkout@v4
+
       - id: release_draft
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -45,14 +46,17 @@ jobs:
 #          - os: ubuntu-22.04-arm # fails due to insufficient space
     steps:
       - uses: actions/checkout@v4
+
       - uses: ./.github/actions/unix
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
+
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
@@ -81,6 +85,7 @@ jobs:
             link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
     steps:
       - uses: actions/checkout@v4
+
       - uses: ./.github/actions/windows
         id: build
         with:
@@ -88,10 +93,12 @@ jobs:
           comp:    ${{matrix.comp}}
           archive: ${{matrix.archive}}
           link:    ${{matrix.link}}
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
+
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
@@ -110,14 +117,17 @@ jobs:
           - os: windows-11-arm
     steps:
       - uses: actions/checkout@v4
+
       - uses: ./.github/actions/windows-msvc
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
+
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
