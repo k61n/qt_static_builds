@@ -55,12 +55,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
+          path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
-          file:       ${{steps.build.outputs.path}}
+          file:       "${{github.workspace}}/${{steps.build.outputs.fn}}"
           asset_name: ${{steps.build.outputs.fn}}
           release_id: ${{needs.release_draft.outputs.release_id}}
           overwrite:  true
@@ -97,12 +97,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
+          path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
-          file:       ${{steps.build.outputs.path}}
+          file:       "${{github.workspace}}/${{steps.build.outputs.fn}}"
           asset_name: ${{steps.build.outputs.fn}}
           release_id: ${{needs.release_draft.outputs.release_id}}
           overwrite:  true
@@ -126,12 +126,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{steps.build.outputs.fn}}
-          path: ${{steps.build.outputs.path}}
+          path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
-          file:       ${{steps.build.outputs.path}}
+          file:       "${{github.workspace}}/${{steps.build.outputs.fn}}"
           asset_name: ${{steps.build.outputs.fn}}
           release_id: ${{needs.release_draft.outputs.release_id}}
           overwrite:  true

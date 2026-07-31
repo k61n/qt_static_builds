@@ -16,10 +16,7 @@ inputs:
 outputs:
   fn:
     description: "Filename"
-    value: ${{steps.build.outputs.fn}}
-  path:
-    description: "Path"
-    value: ${{steps.build.outputs.path}}
+    value: ${{steps.pack.outputs.fn}}
 
 runs:
   using: composite
@@ -60,7 +57,7 @@ runs:
       run: |
         cd qt\build
         ..\configure.bat `
-          -prefix ".\qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}" `
+          -prefix "${{github.workspace}}\qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}" `
           -release `
           -static `
           -static-runtime `
@@ -76,10 +73,12 @@ runs:
           -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
         cmake --build . --parallel ${env:NUMBER_OF_PROCESSORS}
         cmake --install .
+    - name: pack
+      id: pack
+      shell: powershell
+      run: |
         7z a -tzip `
           ".\qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}.zip" `
           ".\qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}\*"
         Add-Content -Path $env:GITHUB_OUTPUT -Value `
           "fn=qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}.zip"
-        $path = (Resolve-Path "qt${{env.v}}_static_${{env.os}}_${{inputs.comp}}_${{env.arch}}.zip").Path
-        Add-Content -Path $env:GITHUB_OUTPUT -Value "path=${path}"
