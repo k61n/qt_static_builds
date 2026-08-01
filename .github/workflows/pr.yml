@@ -49,6 +49,11 @@ jobs:
           cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/$qtdir"
           cmake --build test/build --parallel ${cores}
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qt_static_test_macos_${{env.arch}}
+          path: "${{github.workspace}}/test/build/qt_static_test"
+
       - name: Run test
         shell: bash
         run: ./test/build/qt_static_test
@@ -114,6 +119,11 @@ jobs:
             -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
           cmake --build test/build --parallel ${env:NUMBER_OF_PROCESSORS}
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qt_static_test_${{matrix.comp}}_${{env.arch}}.exe
+          path: "${{github.workspace}}/test/build/qt_static_test.exe"
+
       - name: Run test
         shell: powershell
         run: ./test/build/qt_static_test.exe
@@ -152,6 +162,11 @@ jobs:
             -B test/build ^
             -DCMAKE_PREFIX_PATH="${{github.workspace}}\%qtdir%"
           cmake --build test/build --config Release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qt_static_test_msvc_${{env.arch}}.exe
+          path: "${{github.workspace}}/test/build/Release/qt_static_test.exe"
 
       - name: Run test
         shell: powershell

@@ -33,6 +33,7 @@ runs:
         vv="${v%.*}"
         os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
         arch=$(uname -m)
+        echo "arch=$arch" >> $GITHUB_ENV
         cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
         wget -q "https://download.qt.io/archive/qt/${vv}/${v}/single/qt-everywhere-src-${v}.tar.xz"
         tar -xf "qt-everywhere-src-${v}.tar.xz"
