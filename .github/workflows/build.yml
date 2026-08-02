@@ -6,7 +6,6 @@ on:
 
 jobs:
   release_draft:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,7 +13,7 @@ jobs:
       version: ${{steps.release_draft.outputs.version}}
       release_id: ${{steps.release_draft.outputs.release_id}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: release_draft
         env:
@@ -38,6 +37,7 @@ jobs:
     needs: release_draft
     runs-on: ${{matrix.os}}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-15
@@ -45,19 +45,23 @@ jobs:
 #          - os: ubuntu-22.04     # fails due to insufficient space
 #          - os: ubuntu-22.04-arm # fails due to insufficient space
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v7
 
-      - uses: ./.github/actions/unix
+      - name: Build qt
+        uses: ./.github/actions/unix
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload qt build
+        uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
-      - uses: svenstaro/upload-release-action@v2
+      - name: Store qt build in release page
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
           file:       "${{github.workspace}}/${{steps.build.outputs.fn}}"
@@ -69,6 +73,7 @@ jobs:
     needs: release_draft
     runs-on: ${{matrix.os}}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-2022
@@ -84,9 +89,11 @@ jobs:
             archive: llvm-mingw-20231128-ucrt-aarch64.zip
             link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v7
 
-      - uses: ./.github/actions/windows
+      - name: Build qt
+        uses: ./.github/actions/windows
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
@@ -94,12 +101,14 @@ jobs:
           archive: ${{matrix.archive}}
           link:    ${{matrix.link}}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload qt build
+        uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
-      - uses: svenstaro/upload-release-action@v2
+      - name: Store qt build in release page
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
           file:       "${{github.workspace}}/${{steps.build.outputs.fn}}"
@@ -111,24 +120,29 @@ jobs:
     needs: release_draft
     runs-on: ${{matrix.os}}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-2022
           - os: windows-11-arm
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v7
 
-      - uses: ./.github/actions/windows-msvc
+      - name: Build qt
+        uses: ./.github/actions/windows-msvc
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload qt build
+        uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
 
-      - uses: svenstaro/upload-release-action@v2
+      - name: Store qt build in release page
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
           file:       "${{github.workspace}}/${{steps.build.outputs.fn}}"
