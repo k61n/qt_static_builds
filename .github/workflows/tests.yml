@@ -1,0 +1,174 @@
+name: Tests
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+
+jobs:
+  version:
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{steps.version.outputs.value}}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: version
+        run: |
+          value="$(tr -d '\r\n ' < version.txt)"
+          echo "value=${value}" >> $GITHUB_OUTPUT
+
+  unix:
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
+    needs: version
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+          - os: macos-15-intel
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Download qt from release page
+        uses: ./.github/actions/checkout
+        id: qtsetup
+        with:
+          version:  ${{needs.version.outputs.value}}
+
+      - name: Build test
+        shell: bash
+        run: |
+          arch=$(uname -m)
+          echo "arch=$arch" >> $GITHUB_ENV
+          cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+          cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{steps.qtsetup.outputs.qtpath}}"
+          cmake --build test/build --parallel ${cores}
+
+      - name: Upload test
+        uses: actions/upload-artifact@v7
+        with:
+          name: qt_static_test_macos_${{env.arch}}
+          path: "${{github.workspace}}/test/build/qt_static_test"
+
+      - name: Run test
+        shell: bash
+        run: ./test/build/qt_static_test
+
+  windows:
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
+    needs: version
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            comp: llvm1706
+            archive: llvm-mingw-20231128-ucrt-x86_64.zip
+            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
+          - os: windows-11-arm
+            comp: llvm1706
+            archive: llvm-mingw-20231128-ucrt-aarch64.zip
+            link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
+          - os: windows-2022
+            comp: mingw1310
+            archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+            link: https://download.qt.io/development_releases/prebuilt/mingw_64/
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Download qt from release page
+        uses: ./.github/actions/checkout
+        id: qtsetup
+        with:
+          version:  ${{needs.version.outputs.value}}
+          compiler: ${{matrix.comp}}
+
+      - name: Setup compiler
+        shell: powershell
+        run: |
+          $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+          Add-Content -Path $env:GITHUB_ENV -Value ("arch=" + ($arch -replace '^amd64$', 'x64'))
+          Remove-Item C:\mingw64 -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item "C:\Program Files\LLVM" -Recurse -Force -ErrorAction SilentlyContinue
+          Start-BitsTransfer -Source ${{matrix.link}}${{matrix.archive}} -Destination .
+          $folder = (7z l .\${{matrix.archive}} -ba `
+            | Select-String '(?<=\s)([^\s\\]+)(?=\\)' `
+            | Select-Object -First 1).Matches[0].Groups[1].Value
+          7z x .\${{matrix.archive}} -o"C:\"
+          Rename-Item -Path "C:\$folder" -NewName "mingw64" -ErrorAction SilentlyContinue
+
+      - name: Build test
+        shell: powershell
+        run: |
+          cmake `
+            -S test `
+            -B test/build `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="${{steps.qtsetup.outputs.qtpath}}" `
+            -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
+          cmake --build test/build --parallel ${env:NUMBER_OF_PROCESSORS}
+
+      - name: Upload test
+        uses: actions/upload-artifact@v7
+        with:
+          name: qt_static_test_${{matrix.comp}}_${{env.arch}}.exe
+          path: "${{github.workspace}}/test/build/qt_static_test.exe"
+
+      - name: Run test
+        shell: powershell
+        run: ./test/build/qt_static_test.exe
+
+  windows-msvc:
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
+    needs: version
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+          - os: windows-11-arm
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Download qt from release page
+        uses: ./.github/actions/checkout
+        id: qtsetup
+        with:
+          version:  ${{needs.version.outputs.value}}
+          compiler: msvc2022
+
+      - name: Setup environment
+        shell: powershell
+        run: |
+          $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+          $vspath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          Add-Content -Path $env:GITHUB_ENV -Value ("arch=" + ($arch -replace '^amd64$', 'x64'))
+          Add-Content -Path $env:GITHUB_ENV -Value "vspath=${vspath}"
+
+      - name: Build test
+        shell: cmd
+        run: |
+          call "${{env.vspath}}\VC\Auxiliary\Build\vcvarsall.bat" ${{env.arch}}
+          cmake ^
+            -S test ^
+            -B test/build ^
+            -DCMAKE_PREFIX_PATH="${{steps.qtsetup.outputs.qtpath}}"
+          cmake --build test/build --config Release
+
+      - name: Upload test
+        uses: actions/upload-artifact@v7
+        with:
+          name: qt_static_test_msvc_${{env.arch}}.exe
+          path: "${{github.workspace}}/test/build/Release/qt_static_test.exe"
+
+      - name: Run test
+        shell: powershell
+        run: ./test/build/Release/qt_static_test.exe
