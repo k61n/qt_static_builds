@@ -3,22 +3,20 @@ name: Pr
 on: pull_request
 
 jobs:
-  release_id:
+  version:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{steps.release_draft.outputs.version}}
+      value: ${{steps.version.outputs.value}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - id: release_draft
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - id: version
         run: |
-          version="$(tr -d '\r\n ' < version.txt)"
-          echo "version=${version}" >> $GITHUB_OUTPUT
+          value="$(tr -d '\r\n ' < version.txt)"
+          echo "value=${value}" >> $GITHUB_OUTPUT
 
   unix:
-    needs: release_id
+    needs: version
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -28,14 +26,16 @@ jobs:
           - os: macos-15-intel
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - uses: ./.github/actions/unix
+      - name: Build qt
+        uses: ./.github/actions/unix
         id: build
         with:
-          version: ${{needs.release_id.outputs.version}}
+          version: ${{needs.version.outputs.value}}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload qt build
+        uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
@@ -49,7 +49,8 @@ jobs:
           cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/$qtdir"
           cmake --build test/build --parallel ${cores}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload test
+        uses: actions/upload-artifact@v7
         with:
           name: qt_static_test_macos_${{env.arch}}
           path: "${{github.workspace}}/test/build/qt_static_test"
@@ -59,7 +60,7 @@ jobs:
         run: ./test/build/qt_static_test
 
   windows:
-    needs: release_id
+    needs: version
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -79,29 +80,19 @@ jobs:
             link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup compiler
-        shell: powershell
-        run: |
-          Remove-Item C:\mingw64 -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item "C:\Program Files\LLVM" -Recurse -Force -ErrorAction SilentlyContinue
-          Start-BitsTransfer -Source ${{matrix.link}}${{matrix.archive}} -Destination .
-          $folder = (7z l .\${{matrix.archive}} -ba `
-            | Select-String '(?<=\s)([^\s\\]+)(?=\\)' `
-            | Select-Object -First 1).Matches[0].Groups[1].Value
-          7z x .\${{matrix.archive}} -o"C:\"
-          Rename-Item -Path "C:\$folder" -NewName "mingw64" -ErrorAction SilentlyContinue
-
-      - uses: ./.github/actions/windows
+      - name: Build qt
+        uses: ./.github/actions/windows
         id: build
         with:
-          version: ${{needs.release_id.outputs.version}}
+          version: ${{needs.version.outputs.value}}
           comp:    ${{matrix.comp}}
           archive: ${{matrix.archive}}
           link:    ${{matrix.link}}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload qt build
+        uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
@@ -119,7 +110,8 @@ jobs:
             -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
           cmake --build test/build --parallel ${env:NUMBER_OF_PROCESSORS}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload test
+        uses: actions/upload-artifact@v7
         with:
           name: qt_static_test_${{matrix.comp}}_${{env.arch}}.exe
           path: "${{github.workspace}}/test/build/qt_static_test.exe"
@@ -129,7 +121,7 @@ jobs:
         run: ./test/build/qt_static_test.exe
 
   windows-msvc:
-    needs: release_id
+    needs: version
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -139,14 +131,16 @@ jobs:
           - os: windows-11-arm
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - uses: ./.github/actions/windows-msvc
+      - name: Build qt
+        uses: ./.github/actions/windows-msvc
         id: build
         with:
-          version: ${{needs.release_id.outputs.version}}
+          version: ${{needs.version.outputs.value}}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload qt build
+        uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: "${{github.workspace}}/${{steps.build.outputs.fn}}"
@@ -163,7 +157,8 @@ jobs:
             -DCMAKE_PREFIX_PATH="${{github.workspace}}\%qtdir%"
           cmake --build test/build --config Release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload test
+        uses: actions/upload-artifact@v7
         with:
           name: qt_static_test_msvc_${{env.arch}}.exe
           path: "${{github.workspace}}/test/build/Release/qt_static_test.exe"
