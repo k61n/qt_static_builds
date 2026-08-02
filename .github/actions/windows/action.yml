@@ -68,7 +68,6 @@ runs:
           -nomake tests `
           -skip qtwebengine `
           -no-openssl `
-          -no-sql-odbc `
           -- `
           -DCMAKE_C_COMPILER="gcc.exe" -DCMAKE_CXX_COMPILER="g++.exe" -G"Ninja"
         cmake --build . --parallel ${env:NUMBER_OF_PROCESSORS}
