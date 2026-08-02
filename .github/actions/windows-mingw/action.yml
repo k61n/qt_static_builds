@@ -53,6 +53,7 @@ runs:
           -prefix ".\qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}" `
           -release `
           -static `
+          -static-runtime `
           -opensource `
           -confirm-license `
           -platform win32-g++ `

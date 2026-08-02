@@ -55,6 +55,7 @@ runs:
           -prefix ".\qt${{env.v}}_static_windows_msvc2019_${{inputs.arch}}" ^
           -release ^
           -static ^
+          -static-runtime ^
           -opensource ^
           -confirm-license ^
           -platform win32-msvc ^

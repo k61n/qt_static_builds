@@ -1,13 +1,11 @@
-name: Build
+name: Build_Qt5
 
 on:
   push:
     branches: [ "qt5" ]
-  pull_request:
 
 jobs:
   release_draft:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,7 +13,7 @@ jobs:
       version: ${{steps.release_draft.outputs.version}}
       release_id: ${{steps.release_draft.outputs.release_id}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: release_draft
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -40,15 +38,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15
           - os: macos-15-intel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/macos
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
@@ -75,13 +73,13 @@ jobs:
         shell: powershell
         run: |
           Remove-Item * -Recurse -Force
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/windows-mingw
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
           arch:    ${{matrix.arch}}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
@@ -108,13 +106,13 @@ jobs:
         shell: powershell
         run: |
           Remove-Item * -Recurse -Force
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/windows-msvc
         id: build
         with:
           version: ${{needs.release_draft.outputs.version}}
           arch:    ${{matrix.arch}}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{steps.build.outputs.fn}}
           path: ${{steps.build.outputs.path}}
