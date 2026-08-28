@@ -65,9 +65,9 @@ jobs:
       matrix:
         include:
           - os: win2019
-            arch: 32
+            arch: x86
           - os: win2019
-            arch: 64
+            arch: x64
     steps:
       - name: cleanup
         shell: powershell

@@ -6,7 +6,7 @@ inputs:
     description: "Qt long version"
   arch:
     required: true
-    description: "Architecture 32 or 64"
+    description: "Architecture x86 or x64"
 outputs:
   fn:
     description: "Filename"
@@ -23,8 +23,10 @@ runs:
       run: |
         $v = '${{inputs.version}}'
         $vv = ($v -split '\.')[0..1] -join '.'
+        $arch = if ('${{inputs.arch}}' -eq 'x86') { '32' } else { '64' }
         Add-Content -Path $env:GITHUB_ENV -Value "v=${v}"
         Add-Content -Path $env:GITHUB_ENV -Value "vv=${vv}"
+        Add-Content -Path $env:GITHUB_ENV -Value "arch=${arch}"
     - name: Cache Qt source archive
       id: cache-qt
       uses: actions/cache@v4
@@ -47,7 +49,7 @@ runs:
     - id: build
       shell: powershell
       run: |
-        $env:Path = "C:\Qt\Tools\mingw810_${{inputs.arch}}\bin;" + $env:Path
+        $env:Path = "C:\Qt\Tools\mingw810_${{env.arch}}\bin;" + $env:Path
         cd qt\build
         ..\configure.bat `
           -prefix ".\qt${{env.v}}_static_windows_mingw810_${{inputs.arch}}" `
