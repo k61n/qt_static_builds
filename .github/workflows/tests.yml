@@ -132,8 +132,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2022
-          - os: windows-11-arm
+          - os:   windows-2022
+            comp: msvc2022
+          - os:   windows-11-arm
+            comp: msvc2026
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
@@ -143,7 +145,7 @@ jobs:
         id: qtsetup
         with:
           version:  ${{needs.version.outputs.value}}
-          compiler: msvc2022
+          compiler: ${{matrix.comp}}
 
       - name: Setup environment
         shell: powershell
