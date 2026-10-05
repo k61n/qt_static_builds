@@ -31,7 +31,7 @@ runs:
                 "C:\Program Files (Arm)\Microsoft Visual Studio\Installer", `
                 "C:\Program Files\Microsoft Visual Studio\Installer" `
           -Filter vswhere.exe -ErrorAction SilentlyContinue |
-          Select-Object -First 1 -ExpandProperty FullName
+            Select-Object -First 1 -ExpandProperty FullName
         if (-not $vswhere) { throw "vswhere.exe not found" }
         $vspath = & $vswhere -latest -products * -property installationPath
         $vscmd = Get-ChildItem -Path $vspath -Filter VsDevCmd.bat -Recurse -ErrorAction SilentlyContinue |
@@ -60,7 +60,7 @@ runs:
     - name: configure
       shell: cmd
       run: |
-        call "${{env.vscmd}}" -arch=${{env.arch}}
+        call "${{env.vscmd}}" -arch=${{env.arch}} -host_arch=${{env.arch}}
         cd qt\build
         ..\configure.bat ^
           -prefix "${{github.workspace}}\qt${{env.v}}_static_${{env.os}}_msvc${{env.vsyear}}_${{env.arch}}" ^
@@ -78,13 +78,13 @@ runs:
     - name: build
       shell: cmd
       run: |
-        call "${{env.vscmd}}" -arch=${{env.arch}}
+        call "${{env.vscmd}}" -arch=${{env.arch}} -host_arch=${{env.arch}}
         cd qt\build
         cmake --build .
     - name: install
       shell: cmd
       run: |
-        call "${{env.vscmd}}" -arch=${{env.arch}}
+        call "${{env.vscmd}}" -arch=${{env.arch}} -host_arch=${{env.arch}}
         cd qt\build
         cmake --install .
     - name: pack
