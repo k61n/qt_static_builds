@@ -71,8 +71,8 @@ jobs:
             archive: llvm-mingw-20231128-ucrt-x86_64.zip
             link: https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/
           - os: windows-2022
-            comp: mingw1310
-            archive: MinGW-w64-x86_64-13.1.0-release-posix-seh-msvcrt-rt_v11-rev1.7z
+            comp: mingw1510
+            archive: x86_64-15.1.0-release-posix-seh-msvcrt-rt_v12-rev0.7z
             link: https://download.qt.io/development_releases/prebuilt/mingw_64/
           - os: windows-11-arm
             comp: llvm1706
